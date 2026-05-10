@@ -3,72 +3,70 @@ header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 require_once __DIR__ . '/../config/db.php';
-require_once __DIR__ . '/../config/mailer.php';
+require_once __DIR__ . '/otp_helper.php';
 
 $body = json_decode(file_get_contents("php://input"), true);
 if (!$body) { http_response_code(400); die(json_encode(["success" => false, "message" => "Invalid JSON"])); }
 
-$google_id      = trim($body['sub']          ?? '');
-$email          = trim($body['email']        ?? '');
-$username       = trim($body['name']         ?? '');
-$given_name     = trim($body['given_name']   ?? '');
-$family_name    = trim($body['family_name']  ?? '');
-$picture        = trim($body['picture']      ?? '');
-$email_verified = !empty($body['email_verified']) ? 1 : 0;
+$google_id   = trim($body['sub']         ?? '');
+$email       = trim($body['email']       ?? '');
+$given_name  = trim($body['given_name']  ?? '');
+$family_name = trim($body['family_name'] ?? '');
+$picture     = trim($body['picture']     ?? '');
 
 if (empty($google_id) || empty($email)) {
     http_response_code(400);
-    die(json_encode(["success" => false, "message" => "Missing google_id or email"]));
+    die(json_encode(["success" => false, "message" => "Invalid Google token"]));
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM users WHERE google_id = ?");
-    $stmt->execute([$google_id]);
-    $existing = $stmt->fetch();
+    // Check if user already exists (by google_id or email)
+    $stmt = $pdo->prepare("SELECT * FROM users WHERE google_id = ? OR email = ? LIMIT 1");
+    $stmt->execute([$google_id, $email]);
+    $user = $stmt->fetch();
 
-    if ($existing) {
-        $pdo->prepare("UPDATE users SET last_login = CURRENT_TIMESTAMP, picture = ? WHERE google_id = ?")
-            ->execute([$picture, $google_id]);
-    } else {
-        // Check if email already exists under a different provider
-        $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$email]);
-        if ($stmt->fetch()) {
-            // Link Google to existing account
-            $pdo->prepare("UPDATE users SET google_id = ?, picture = ?, auth_provider = 'google' WHERE email = ?")
-                ->execute([$google_id, $picture, $email]);
-        } else {
-            $pdo->prepare("
-                INSERT INTO users (google_id, email, username, given_name, family_name, picture, email_verified, auth_provider)
-                VALUES (?, ?, ?, ?, ?, ?, ?, 'google')
-            ")->execute([$google_id, $email, $username, $given_name, $family_name, $picture, $email_verified]);
+    if ($user) {
+        // ── Returning user ── update picture, link google_id if missing
+        $pdo->prepare("
+            UPDATE users SET last_login = CURRENT_TIMESTAMP, picture = COALESCE(picture, ?),
+            google_id = COALESCE(google_id, ?)
+            WHERE email = ?
+        ")->execute([$picture, $google_id, $email]);
+
+        // Send OTP for sign-in
+        $result = sendOtp($pdo, $email, $user['given_name']);
+        if (!$result['success']) {
+            http_response_code(429);
+            die(json_encode($result));
         }
+
+        echo json_encode([
+            "success"      => true,
+            "is_new_user"  => false,
+            "has_password" => !empty($user['password']),
+            "email"        => $email,
+            "given_name"   => $user['given_name'],
+            "message"      => $result['message'],
+        ]);
+
+    } else {
+        // ── New user ── tell frontend to go to sign-up form (pre-filled)
+        echo json_encode([
+            "success"     => true,
+            "is_new_user" => true,
+            "email"       => $email,
+            "given_name"  => $given_name,
+            "family_name" => $family_name,
+            "picture"     => $picture,
+            "google_id"   => $google_id,
+            "message"     => "Please complete your profile to continue",
+        ]);
     }
-
-    // Generate OTP for this Google login
-    $otp     = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-
-    $pdo->prepare("DELETE FROM otp_tokens WHERE email = ?")->execute([$email]);
-    $pdo->prepare("INSERT INTO otp_tokens (email, otp, expires_at) VALUES (?, ?, UTC_TIMESTAMP() + INTERVAL 10 MINUTE)")
-        ->execute([$email, $otp]);
-
-    // Send OTP via Gmail SMTP
-    $subject = "Your Mero Gadi verification code";
-    $message = "Hi {$given_name},\n\nYour one-time verification code is:\n\n    $otp\n\nThis code expires in 10 minutes.\n\n— Mero Gadi Team";
-    sendMail($email, $subject, $message);
-
-    echo json_encode([
-        "success"    => true,
-        "message"    => "OTP sent to $email",
-        "email"      => $email,
-        "given_name" => $given_name ?: $username,
-    ]);
 
 } catch (Exception $e) {
     http_response_code(500);
-    echo json_encode(["success" => false, "message" => "Database error: " . $e->getMessage()]);
+    echo json_encode(["success" => false, "message" => "Server error: " . $e->getMessage()]);
 }

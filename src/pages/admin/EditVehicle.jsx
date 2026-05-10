@@ -1,7 +1,7 @@
 // src/pages/admin/EditVehicle.jsx
 // Sits inside your existing src/pages/admin/ folder
 
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import VehicleForm from "../../component/VehicleForm";
 import { getById, update } from "../../services/vehicleService";

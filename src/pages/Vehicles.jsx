@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import VehicleCard from '../component/VehicleCard';
+import VehicleDetail from '../component/VehicleDetail';
 import Footer from '../component/Footer';
 import './Vehicles.css';
 
@@ -14,6 +15,7 @@ export default function Vehicles() {
   const [search, setSearch]       = useState('');
   const [maxPrice, setMaxPrice]   = useState(MAX_PRICE);
   const [sortBy, setSortBy]       = useState('price_asc');
+  const [selectedId, setSelectedId] = useState(null); // overlay
 
   useEffect(() => {
     fetch('/api/vehicles/get_vehicles.php')
@@ -130,13 +132,14 @@ export default function Vehicles() {
           {filtered.length === 0 ? (
             <p className="no-results">No vehicles match your filters.</p>
           ) : (
-            filtered.map((v) => <VehicleCard key={v.id} vehicle={v} />)
+            filtered.map((v) => <VehicleCard key={v.id} vehicle={v} onOpen={setSelectedId} />)
           )}
         </div>
 
       </div>
       </div>
       <Footer />
+      {selectedId && <VehicleDetail vehicleId={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }

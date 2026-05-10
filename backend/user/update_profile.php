@@ -3,39 +3,43 @@ header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: PUT, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type");
-
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') { http_response_code(200); exit; }
 
 require_once __DIR__ . '/../config/db.php';
 
-$body  = json_decode(file_get_contents("php://input"), true);
-$email = trim($body['email']    ?? '');
-$name  = trim($body['username'] ?? '');
+$body        = json_decode(file_get_contents("php://input"), true);
+$email       = trim($body['email']       ?? '');
+$given_name  = trim($body['given_name']  ?? '');
+$family_name = trim($body['family_name'] ?? '');
+$dob         = trim($body['dob']         ?? '');
 
-if (empty($email) || empty($name)) {
-    http_response_code(400);
-    die(json_encode(["success" => false, "message" => "Email and name are required"]));
+if (empty($email))      die(json_encode(["success" => false, "message" => "Email is required"]));
+if (empty($given_name)) die(json_encode(["success" => false, "message" => "First name is required"]));
+
+// Validate DOB if provided
+if ($dob) {
+    $d = DateTime::createFromFormat('Y-m-d', $dob);
+    if (!$d) die(json_encode(["success" => false, "message" => "Invalid date of birth"]));
+    $age = $d->diff(new DateTime())->y;
+    if ($age < 18) die(json_encode(["success" => false, "message" => "You must be at least 18 years old"]));
 }
 
-// Find user by email
 $stmt = $pdo->prepare("SELECT id FROM users WHERE email = ?");
 $stmt->execute([$email]);
-$user = $stmt->fetch();
+if (!$stmt->fetch()) die(json_encode(["success" => false, "message" => "User not found"]));
 
-if (!$user) {
-    http_response_code(404);
-    die(json_encode(["success" => false, "message" => "User not found"]));
-}
+$username = trim("$given_name $family_name");
 
-// Update username and given_name (first word of name)
-$given = explode(' ', $name)[0];
-
-$pdo->prepare("UPDATE users SET username = ?, given_name = ? WHERE email = ?")
-    ->execute([$name, $given, $email]);
+$pdo->prepare("
+    UPDATE users SET given_name = ?, family_name = ?, username = ?, dob = ?
+    WHERE email = ?
+")->execute([$given_name, $family_name, $username, $dob ?: null, $email]);
 
 echo json_encode([
-    "success"  => true,
-    "message"  => "Name updated",
-    "username" => $name,
-    "given_name" => $given,
+    "success"     => true,
+    "message"     => "Profile updated successfully",
+    "given_name"  => $given_name,
+    "family_name" => $family_name,
+    "username"    => $username,
+    "dob"         => $dob ?: null,
 ]);

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import VehicleCard from '../component/VehicleCard';
+import VehicleDetail from '../component/VehicleDetail';
 import Footer from '../component/Footer';
 import './Home.css';
 
@@ -32,7 +33,8 @@ const WHY_ITEMS = [
 
 export default function Home() {
   const navigate = useNavigate();
-  const [featured, setFeatured] = useState([]);
+  const [featured, setFeatured]     = useState([]);
+  const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
     fetch('/api/vehicles/get_vehicles.php')
@@ -113,11 +115,12 @@ export default function Home() {
           <button className="btn-view-all" onClick={() => navigate('/vehicles')}>View All →</button>
         </div>
         <div className="home-vehicles-grid">
-          {featured.map((v) => <VehicleCard key={v.id} vehicle={v} />)}
+          {featured.map((v) => <VehicleCard key={v.id} vehicle={v} onOpen={setSelectedId} />)}
         </div>
       </section>
 
       <Footer />
+      {selectedId && <VehicleDetail vehicleId={selectedId} onClose={() => setSelectedId(null)} />}
     </div>
   );
 }

@@ -1,66 +1,37 @@
 // src/services/vehicleService.js
-// Talks to your existing: backend/admin/vehicles.php
-//                    and: backend/vehicles/get_vehicles.php
+// Uses fetch + Vite proxy (/api → localhost:8000)
+// Matches backend/admin/vehicles.php and backend/vehicles/get_vehicles.php
 
-import axios from "axios";
+import { adminFetch } from '../context/AuthContext';
 
-const BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost/Vehicle_Rental_System/backend";
-
-const api = axios.create({
-  baseURL: BASE,
-  withCredentials: true, // keeps your admin_auth.php session cookie
-});
-
-// Redirect to login on 401 (works with your existing Authentication.jsx flow)
-api.interceptors.response.use(
-  (res) => res,
-  (err) => {
-    if (err.response?.status === 401) window.location.href = "/login";
-    return Promise.reject(err);
-  }
-);
-
-// Converts a plain form object → FormData for multipart/file uploads
-function buildFormData(data) {
-  const fd = new FormData();
-  Object.entries(data).forEach(([key, val]) => {
-    if (key === "images") {
-      // Array of new File objects — PHP reads as $_FILES['images'][]
-      (val || []).forEach((file) => fd.append("images[]", file));
-    } else if (key === "features" || key === "existing_images") {
-      // Send arrays as JSON strings; PHP decodes with json_decode()
-      fd.append(key, JSON.stringify(val || []));
-    } else if (val !== null && val !== undefined) {
-      fd.append(key, val);
-    }
-  });
-  return fd;
-}
-
-// GET all vehicles — uses your existing get_vehicles.php
+// GET all available vehicles (public)
 export async function getAll() {
-  const { data } = await api.get("/vehicles/get_vehicles.php");
-  return data.vehicles ?? data;
+  const res  = await fetch('/api/vehicles/get_vehicles.php');
+  const data = await res.json();
+  return data.vehicles ?? [];
 }
 
-// GET single vehicle by id — your vehicles.php?id=X
+// GET single vehicle by id (admin)
 export async function getById(id) {
-  const { data } = await api.get(`/admin/vehicles.php?id=${id}`);
-  return data.vehicle ?? data;
+  const res  = await adminFetch(`/api/admin/vehicles.php?id=${id}`);
+  const data = await res.json();
+  return data.data ?? null;
 }
 
-// POST — create new vehicle
+// POST — create new vehicle (admin)
 export async function create(formData) {
-  const { data } = await api.post("/admin/vehicles.php", buildFormData(formData));
-  return data; // { success, message, id }
+  const res  = await adminFetch('/api/admin/vehicles.php', {
+    method: 'POST',
+    body: JSON.stringify(formData),
+  });
+  return res.json();
 }
 
-// PUT — update existing vehicle
-// PHP doesn't parse multipart PUT bodies so we use POST + _method override
+// PUT — update existing vehicle (admin)
 export async function update(id, formData) {
-  const fd = buildFormData(formData);
-  fd.append("_method", "PUT");
-  fd.append("id", id);
-  const { data } = await api.post("/admin/vehicles.php", fd);
-  return data; // { success, message }
+  const res  = await adminFetch('/api/admin/vehicles.php', {
+    method: 'PUT',
+    body: JSON.stringify({ id, ...formData }),
+  });
+  return res.json();
 }

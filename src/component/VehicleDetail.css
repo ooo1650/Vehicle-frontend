@@ -1,0 +1,278 @@
+/* Backdrop */
+.vd-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  z-index: 500;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  backdrop-filter: blur(2px);
+}
+
+/* Modal — matches design: wide, white, rounded */
+.vd-modal {
+  background: #fff;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 860px;
+  max-height: 88vh;
+  overflow-y: auto;
+  position: relative;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+}
+
+/* Close button — top right */
+.vd-close {
+  position: sticky;
+  top: 12px;
+  float: right;
+  margin: 12px 12px 0 0;
+  background: #f1f5f9;
+  border: none;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  font-size: 14px;
+  cursor: pointer;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #64748b;
+  transition: background 0.15s;
+}
+.vd-close:hover { background: #e2e8f0; color: #1e293b; }
+
+.vd-loading {
+  padding: 80px;
+  text-align: center;
+  color: #6b7280;
+  font-size: 15px;
+}
+
+/* Two-column body */
+.vd-body {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr;
+  gap: 0;
+  padding: 0;
+  clear: both;
+}
+
+@media (max-width: 640px) {
+  .vd-body { grid-template-columns: 1fr; }
+}
+
+/* ── LEFT column ── */
+.vd-left {
+  padding: 20px 20px 24px;
+  border-right: 1px solid #f0f0f0;
+}
+
+/* Main image */
+.vd-main-img-wrap {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  height: 240px;
+  background: #f1f5f9;
+}
+
+.vd-main-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.vd-type-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: rgba(255,255,255,0.95);
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 12px;
+  border-radius: 20px;
+}
+
+/* Thumbnails row */
+.vd-thumbs {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.vd-thumb {
+  flex: 1;
+  height: 60px;
+  object-fit: cover;
+  border-radius: 8px;
+  cursor: pointer;
+  border: 2px solid transparent;
+  opacity: 0.75;
+  transition: all 0.15s;
+  min-width: 0;
+}
+.vd-thumb:hover { opacity: 1; }
+.vd-thumb.active { border-color: #1d4ed8; opacity: 1; }
+
+/* Description */
+.vd-desc {
+  margin-top: 18px;
+}
+.vd-desc h4 {
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  margin: 0 0 6px;
+}
+.vd-desc p {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* ── RIGHT column ── */
+.vd-right {
+  padding: 24px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.vd-name {
+  font-size: 22px;
+  font-weight: 700;
+  color: #111827;
+  margin: 0;
+}
+
+/* Quick specs row */
+.vd-specs-row {
+  display: flex;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+.vd-spec {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 13px;
+  color: #374151;
+  font-weight: 500;
+}
+
+/* Availability */
+.vd-availability {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.vd-availability.available   { color: #16a34a; }
+.vd-availability.unavailable { color: #dc2626; }
+.vd-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* Price */
+.vd-price-section {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
+}
+.vd-price-label {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  display: block;
+  margin-bottom: 3px;
+}
+.vd-price {
+  font-size: 24px;
+  font-weight: 700;
+  color: #1d4ed8;
+}
+.vd-price-unit {
+  font-size: 13px;
+  font-weight: 400;
+  color: #6b7280;
+}
+
+/* Two-column detail grid — matches design */
+.vd-detail-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
+}
+
+.vd-detail-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vd-detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.vd-detail-label {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.vd-detail-val {
+  font-size: 13px;
+  color: #1e293b;
+  font-weight: 500;
+}
+
+/* Features — right side, full width */
+.vd-features {
+  border-top: 1px solid #f0f0f0;
+  padding-top: 10px;
+}
+.vd-features-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 5px;
+}
+.vd-features-text {
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.65;
+  margin: 0;
+}
+
+/* Book button */
+.vd-book-btn {
+  margin-top: auto;
+  width: 100%;
+  padding: 13px;
+  background: #1d4ed8;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  transition: background 0.2s;
+}
+.vd-book-btn:hover:not(:disabled) { background: #1e40af; }
+.vd-book-btn:disabled { background: #94a3b8; cursor: not-allowed; }

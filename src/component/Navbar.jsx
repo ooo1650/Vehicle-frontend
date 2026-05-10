@@ -11,9 +11,9 @@ export default function Navbar() {
   const user = JSON.parse(localStorage.getItem('user') || 'null');
 
   const navLinks = [
-    { to: '/dashboard', label: 'Home' },
-    { to: '/vehicles',  label: 'Vehicles' },
-    { to: '/booking',   label: 'My Bookings' },
+    { to: '/dashboard',   label: 'Home' },
+    { to: '/vehicles',    label: 'Vehicles' },
+    { to: '/my-bookings', label: 'My Bookings' },
   ];
 
   return (

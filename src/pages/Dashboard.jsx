@@ -77,7 +77,7 @@ export default function Dashboard() {
               <p>Find and book your next ride</p>
             </div>
           </div>
-          <div className="action-card" onClick={() => navigate('/booking')}>
+          <div className="action-card" onClick={() => navigate('/my-bookings')}>
             <span className="action-icon">📋</span>
             <div>
               <strong>My Bookings</strong>

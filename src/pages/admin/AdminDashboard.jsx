@@ -31,10 +31,46 @@ export default function AdminDashboard() {
   }, []);
 
   const statCards = [
-    { label: 'Total Vehicles', value: counts.vehicles, icon: '🚗', color: 'blue'   },
-    { label: 'Total Bookings', value: counts.bookings, icon: '📅', color: 'green'  },
-    { label: 'Total Users',    value: counts.users,    icon: '👤', color: 'purple' },
-    { label: 'Revenue (NPR)',  value: `NPR ${Number(revenue).toLocaleString()}`, icon: '💳', color: 'amber' },
+    {
+      label: 'Total Vehicles',
+      value: counts.vehicles,
+      color: 'blue',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#2563eb" strokeWidth="1.8">
+          <rect x="1" y="3" width="15" height="13" rx="2"/><path d="M16 8h4l3 3v5h-7V8z"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Active Bookings',
+      value: counts.bookings,
+      color: 'green',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#16a34a" strokeWidth="1.8">
+          <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Total Revenue',
+      value: `NPR ${Number(revenue).toLocaleString()}`,
+      color: 'amber',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#d97706" strokeWidth="1.8">
+          <circle cx="12" cy="12" r="10"/><path d="M12 6v2m0 8v2M9 9h4.5a1.5 1.5 0 0 1 0 3H10a1.5 1.5 0 0 0 0 3H15"/>
+        </svg>
+      ),
+    },
+    {
+      label: 'Total Bookings',
+      value: counts.bookings,
+      color: 'purple',
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#7c3aed" strokeWidth="1.8">
+          <polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>
+        </svg>
+      ),
+    },
   ];
 
   return (
