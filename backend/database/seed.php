@@ -3,7 +3,7 @@
 require_once __DIR__ . '/../config/db.php';
 
 $username = "admin";
-$plainPassword = "Admin@VRS2026";
+$plainPassword = "admin";
 $hashedPassword = password_hash($plainPassword, PASSWORD_BCRYPT);
 
 $stmt = $pdo->prepare(

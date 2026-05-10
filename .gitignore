@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Mail credentials — never commit these
+backend/config/mail.php
+otp_log.txt
+vendor/
+composer.lock

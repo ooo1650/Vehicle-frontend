@@ -4,6 +4,7 @@ import Authentication from './pages/Authentication';
 import Home from './pages/Home';
 import Vehicles from './pages/Vehicles';
 import Booking from './pages/Booking';
+import Profile from './pages/Profile';
 import NotFound from './pages/NotFound';
 import Navbar from './component/Navbar';
 import AdminLogin from './pages/admin/AdminLogin';
@@ -52,8 +53,9 @@ export default function App() {
 
         {/* Protected user routes - Navbar is shown inside ProtectedRoute */}
         <Route path="/dashboard" element={<ProtectedRoute><Home /></ProtectedRoute>} />
-        <Route path="/vehicles" element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
-        <Route path="/booking" element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+        <Route path="/vehicles"  element={<ProtectedRoute><Vehicles /></ProtectedRoute>} />
+        <Route path="/booking"   element={<ProtectedRoute><Booking /></ProtectedRoute>} />
+        <Route path="/profile"   element={<ProtectedRoute><Profile /></ProtectedRoute>} />
         <Route path="/admin/dashboard" element={<AdminRoute><AdminLayout /></AdminRoute>}>
           <Route index element={<AdminDashboard />} />
         </Route>
