@@ -52,20 +52,47 @@ switch ($method) {
         break;
 
     case 'PUT':
-        $body = json_decode(file_get_contents("php://input"), true);
-        $id = $body['id'] ?? null;
-        if (!$id) { http_response_code(400); echo json_encode(["success" => false, "message" => "ID required"]); exit; }
+    $body = json_decode(file_get_contents("php://input"), true);
+    $id = $body['id'] ?? null;
+    if (!$id) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "ID required"]);
+        exit;
+    }
 
-        $allowed = ['name', 'type', 'fuel_type', 'seats', 'price_per_day', 'image_url', 'available'];
-        $fields = []; $values = [];
-        foreach ($allowed as $f) {
-            if (isset($body[$f])) { $fields[] = "$f = ?"; $values[] = $body[$f]; }
+    // Before deactivating, check for active bookings
+    if (isset($body['available']) && (int)$body['available'] === 0) {
+        $check = $pdo->prepare(
+            "SELECT COUNT(*) as total FROM bookings
+             WHERE vehicle_id = ?
+             AND status IN ('pending', 'confirmed')"
+        );
+        $check->execute([$id]);
+        $row = $check->fetch();
+        if ($row['total'] > 0) {
+            http_response_code(409);
+            echo json_encode([
+                "success" => false,
+                "message" => "Cannot deactivate. This vehicle has " . $row['total'] . " active booking(s). Please resolve them first."
+            ]);
+            exit;
         }
-        if (empty($fields)) { http_response_code(400); echo json_encode(["success" => false, "message" => "Nothing to update"]); exit; }
-        $values[] = $id;
-        $pdo->prepare("UPDATE vehicles SET " . implode(', ', $fields) . " WHERE id = ?")->execute($values);
-        echo json_encode(["success" => true, "message" => "Vehicle updated"]);
-        break;
+    }
+
+    $allowed = ['name', 'type', 'fuel_type', 'seats', 'price_per_day', 'image_url', 'available'];
+    $fields = []; $values = [];
+    foreach ($allowed as $f) {
+        if (isset($body[$f])) { $fields[] = "$f = ?"; $values[] = $body[$f]; }
+    }
+    if (empty($fields)) {
+        http_response_code(400);
+        echo json_encode(["success" => false, "message" => "Nothing to update"]);
+        exit;
+    }
+    $values[] = $id;
+    $pdo->prepare("UPDATE vehicles SET " . implode(', ', $fields) . " WHERE id = ?")->execute($values);
+    echo json_encode(["success" => true, "message" => "Vehicle updated successfully"]);
+    break;
 
     case 'DELETE':
         $id = $_GET['id'] ?? null;
