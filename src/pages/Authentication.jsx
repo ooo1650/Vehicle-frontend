@@ -8,10 +8,12 @@ const GOOGLE_CLIENT_ID = '537729065202-f0287ficblsbjfgp9k5gkg0judpk2nkv.apps.goo
 
 // Screen names
 const S = {
-  SIGNIN:       'signin',
-  SIGNUP:       'signup',
-  OTP:          'otp',
-  SET_PASSWORD: 'set_password',
+  SIGNIN:         'signin',
+  SIGNUP:         'signup',
+  OTP:            'otp',
+  SET_PASSWORD:   'set_password',
+  FORGOT:         'forgot',
+  RESET_PASSWORD: 'reset_password',
 };
 
 function pwStrength(pw) {
@@ -57,6 +59,7 @@ export default function Authentication() {
 
   const [screen, setScreen] = useState(S.SIGNIN);
   const [error,  setError]  = useState(null);
+  const [successMsg, setSuccessMsg] = useState(null);
   const [loading, setLoading] = useState(false);
 
   // Sign-in fields
@@ -75,13 +78,17 @@ export default function Authentication() {
   // OTP
   const [otp,          setOtp]          = useState('');
   const [pendingEmail, setPendingEmail] = useState('');
+  const [otpMode,      setOtpMode]      = useState('signin'); // 'signin' | 'signup' | 'forgot'
 
-  // Set-password
+  // Set-password / Reset-password
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
 
-  function err(msg) { setError(msg); setLoading(false); }
-  function clearErr() { setError(null); }
+  // Forgot password
+  const [fpEmail, setFpEmail] = useState('');
+
+  function err(msg) { setError(msg); setSuccessMsg(null); setLoading(false); }
+  function clearErr() { setError(null); setSuccessMsg(null); }
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -118,6 +125,7 @@ export default function Authentication() {
       const data = await res.json();
       if (!data.success) return err(data.message);
       setPendingEmail(siEmail);
+      setOtpMode('signin');
       setScreen(S.OTP);
     } catch { err('Cannot reach the server. Is the PHP server running?'); }
     finally  { setLoading(false); }
@@ -147,6 +155,7 @@ export default function Authentication() {
       const data = await res.json();
       if (!data.success) return err(data.message);
       setPendingEmail(suEmail.trim());
+      setOtpMode('signup');
       setScreen(S.OTP);
     } catch { err('Cannot reach the server. Is the PHP server running?'); }
     finally  { setLoading(false); }
@@ -177,6 +186,7 @@ export default function Authentication() {
       } else {
         // Returning user — OTP sent
         setPendingEmail(data.email);
+        setOtpMode('signin');
         setScreen(S.OTP);
       }
     } catch { err('Cannot reach the server. Is the PHP server running?'); }
@@ -199,7 +209,11 @@ export default function Authentication() {
       const data = await res.json();
       if (!data.success) return err(data.message);
 
-      if (data.needs_password) {
+      if (otpMode === 'forgot') {
+        // OTP verified for password reset — go to reset screen
+        setPw1(''); setPw2('');
+        setScreen(S.RESET_PASSWORD);
+      } else if (data.needs_password) {
         // New sign-up — go set password
         setScreen(S.SET_PASSWORD);
       } else {
@@ -207,6 +221,57 @@ export default function Authentication() {
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/dashboard');
       }
+    } catch { err('Cannot reach the server. Is the PHP server running?'); }
+    finally  { setLoading(false); }
+  }
+
+  // ── Forgot Password ───────────────────────────────────────────────────────
+
+  async function handleForgotPassword(e) {
+    e.preventDefault(); clearErr();
+    if (!fpEmail) return err('Email is required');
+    if (!/\S+@\S+\.\S+/.test(fpEmail)) return err('Please enter a valid email address');
+
+    setLoading(true);
+    try {
+      const res  = await fetch('/api/auth/forgot_password.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: fpEmail }),
+      });
+      const data = await res.json();
+      if (!data.success) return err(data.message);
+      setPendingEmail(fpEmail);
+      setOtpMode('forgot');
+      setOtp('');
+      setScreen(S.OTP);
+    } catch { err('Cannot reach the server. Is the PHP server running?'); }
+    finally  { setLoading(false); }
+  }
+
+  // ── Reset Password ────────────────────────────────────────────────────────
+
+  async function handleResetPassword(e) {
+    e.preventDefault(); clearErr();
+    const pwErr = validatePw(pw1, pw2);
+    if (pwErr) return err(pwErr);
+
+    setLoading(true);
+    try {
+      const res  = await fetch('/api/auth/reset_password.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: pendingEmail, password: pw1 }),
+      });
+      const data = await res.json();
+      if (!data.success) return err(data.message);
+      // Success — go back to sign in with a success hint
+      setScreen(S.SIGNIN);
+      setSiEmail(pendingEmail);
+      setError(null);
+      setSuccessMsg('Password reset successfully. You can now sign in.');
+      setPendingEmail('');
+      setFpEmail('');
     } catch { err('Cannot reach the server. Is the PHP server running?'); }
     finally  { setLoading(false); }
   }
@@ -254,6 +319,7 @@ export default function Authentication() {
                 <button className="auth-tab active">Sign In</button>
                 <button className="auth-tab" onClick={() => { setScreen(S.SIGNUP); clearErr(); }}>Sign Up</button>
               </div>
+              {successMsg && <p className="auth-success">{successMsg}</p>}
               <form className="auth-form" onSubmit={handleSignIn}>
                 <input className="auth-input" type="email" placeholder="Email address"
                   value={siEmail} onChange={e => setSiEmail(e.target.value)} required autoFocus />
@@ -263,6 +329,9 @@ export default function Authentication() {
                   {loading ? 'Please wait...' : 'Sign In'}
                 </button>
               </form>
+              <button className="auth-forgot-link" onClick={() => { setFpEmail(siEmail); clearErr(); setScreen(S.FORGOT); }}>
+                Forgot password?
+              </button>
               <div className="auth-divider"><span>or</span></div>
               {loading ? <p className="auth-loading">Signing you in...</p> : (
                 <GoogleLogin onSuccess={handleGoogle} onError={() => err('Google sign-in failed')}
@@ -284,7 +353,7 @@ export default function Authentication() {
                 <div className="auth-avatar-pick" onClick={() => fileRef.current.click()}>
                   {suPicPrev
                     ? <img src={suPicPrev} alt="Preview" className="auth-avatar-preview" />
-                    : <div className="auth-avatar-placeholder">📷<span>Add photo (optional)</span></div>
+                    : <div className="auth-avatar-placeholder"><span>Add photo (optional)</span></div>
                   }
                   <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handlePicChange} />
                 </div>
@@ -301,8 +370,8 @@ export default function Authentication() {
                 <input className="auth-input" type="date" value={suDob} onChange={e => setSuDob(e.target.value)}
                   required />
                 {suDob && calcAge(suDob) < 18
-                  ? <p className="auth-age-error">⚠ You must be at least 18 years old to register</p>
-                  : suDob && <p className="pw-hint" style={{color:'#16a34a'}}>✓ Age verified</p>
+                  ? <p className="auth-age-error">You must be at least 18 years old to register</p>
+                  : suDob && <p className="pw-hint" style={{color:'#16a34a'}}>Age verified</p>
                 }
 
                 <input className="auth-input" type="email" placeholder="Email address *"
@@ -330,7 +399,12 @@ export default function Authentication() {
           {/* ── OTP ── */}
           {screen === S.OTP && (
             <>
-              <p>Enter the 6-digit code sent to<br /><strong>{pendingEmail}</strong></p>
+              <p>
+                {otpMode === 'forgot'
+                  ? <>Enter the 6-digit reset code sent to<br /><strong>{pendingEmail}</strong></>
+                  : <>Enter the 6-digit code sent to<br /><strong>{pendingEmail}</strong></>
+                }
+              </p>
               <form className="auth-form" onSubmit={handleOtp}>
                 <input className="auth-input auth-input--otp" type="text" inputMode="numeric"
                   maxLength={6} placeholder="· · · · · ·" value={otp}
@@ -340,7 +414,10 @@ export default function Authentication() {
                 </button>
               </form>
               <p className="pw-hint" style={{ textAlign:'center' }}>Max 3 codes per 10 minutes</p>
-              <button className="auth-back" onClick={() => { setScreen(S.SIGNIN); setOtp(''); clearErr(); }}>← Back</button>
+              <button className="auth-back" onClick={() => {
+                setOtp(''); clearErr();
+                setScreen(otpMode === 'forgot' ? S.FORGOT : S.SIGNIN);
+              }}>← Back</button>
             </>
           )}
 
@@ -357,6 +434,39 @@ export default function Authentication() {
                 <p className="pw-hint">Min 8 chars · one uppercase · one number</p>
                 <button className="auth-btn" type="submit" disabled={loading}>
                   {loading ? 'Saving...' : 'Create Account'}
+                </button>
+              </form>
+            </>
+          )}
+
+          {/* ── Forgot Password ── */}
+          {screen === S.FORGOT && (
+            <>
+              <p style={{ marginBottom: 4 }}>Enter your account email and we'll send you a reset code.</p>
+              <form className="auth-form" onSubmit={handleForgotPassword}>
+                <input className="auth-input" type="email" placeholder="Email address"
+                  value={fpEmail} onChange={e => setFpEmail(e.target.value)} required autoFocus />
+                <button className="auth-btn" type="submit" disabled={loading}>
+                  {loading ? 'Sending...' : 'Send Reset Code'}
+                </button>
+              </form>
+              <button className="auth-back" onClick={() => { clearErr(); setScreen(S.SIGNIN); }}>← Back to Sign In</button>
+            </>
+          )}
+
+          {/* ── Reset Password ── */}
+          {screen === S.RESET_PASSWORD && (
+            <>
+              <p>OTP verified. Set your new password for<br /><strong>{pendingEmail}</strong></p>
+              <form className="auth-form" onSubmit={handleResetPassword}>
+                <input className="auth-input" type="password" placeholder="New password"
+                  value={pw1} onChange={e => setPw1(e.target.value)} required autoFocus />
+                <StrengthBar pw={pw1} />
+                <input className="auth-input" type="password" placeholder="Confirm new password"
+                  value={pw2} onChange={e => setPw2(e.target.value)} required />
+                <p className="pw-hint">Min 8 chars · one uppercase · one number</p>
+                <button className="auth-btn" type="submit" disabled={loading}>
+                  {loading ? 'Saving...' : 'Reset Password'}
                 </button>
               </form>
             </>

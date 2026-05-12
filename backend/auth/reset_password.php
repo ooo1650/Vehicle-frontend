@@ -10,6 +10,10 @@ if (empty($email) || empty($password)) {
     http_response_code(400);
     die(json_encode(["success" => false, "message" => "Email and password are required"]));
 }
+if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    http_response_code(400);
+    die(json_encode(["success" => false, "message" => "Invalid email address"]));
+}
 if (strlen($password) < 8) {
     http_response_code(400);
     die(json_encode(["success" => false, "message" => "Password must be at least 8 characters"]));
@@ -31,24 +35,7 @@ if (!$stmt->fetch()) {
 }
 
 $hashed = password_hash($password, PASSWORD_BCRYPT);
-$pdo->prepare("UPDATE users SET password = ?, email_verified = 1 WHERE email = ?")->execute([$hashed, $email]);
+$pdo->prepare("UPDATE users SET password = ?, email_verified = 1 WHERE email = ?")
+    ->execute([$hashed, $email]);
 
-// Return full user for localStorage
-$stmt = $pdo->prepare("SELECT * FROM users WHERE email = ?");
-$stmt->execute([$email]);
-$user = $stmt->fetch();
-
-echo json_encode([
-    "success" => true,
-    "message" => "Password set successfully",
-    "user" => [
-        "id"          => (int) $user['id'],
-        "email"       => $user['email'],
-        "given_name"  => $user['given_name'],
-        "family_name" => $user['family_name'],
-        "username"    => $user['username'],
-        "dob"         => $user['dob'],
-        "picture"     => $user['picture'],
-        "auth_provider" => $user['auth_provider'],
-    ]
-]);
+echo json_encode(["success" => true, "message" => "Password reset successfully. You can now sign in."]);
