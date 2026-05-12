@@ -3,6 +3,7 @@ import VehicleCard from '../component/VehicleCard';
 import VehicleDetail from '../component/VehicleDetail';
 import Footer from '../component/Footer';
 import './Vehicles.css';
+import { apiUrl } from '../utils/api';
 
 const TYPES = ['All', 'Car', 'SUV', 'Van', 'Motorcycle', 'Truck'];
 const MAX_PRICE = 50000;
@@ -18,7 +19,7 @@ export default function Vehicles() {
   const [selectedId, setSelectedId] = useState(null); // overlay
 
   useEffect(() => {
-    fetch('/api/vehicles/get_vehicles.php')
+    fetch(apiUrl('/api/vehicles/get_vehicles.php'))
       .then((r) => r.json())
       .then((data) => {
         if (data.success) setVehicles(data.vehicles);

@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { adminFetch } from '../../context/AuthContext';
+import { apiUrl } from '../../utils/api';
 
 const TYPES = ['Car', 'SUV', 'Van', 'Motorcycle', 'Truck'];
 const FUELS = ['Petrol', 'Diesel', 'Electric'];
@@ -131,7 +132,7 @@ export default function AdminVehicles() {
   const [saving,   setSaving]   = useState(false);
 
   function load() {
-    adminFetch('/api/admin/vehicles.php')
+    adminFetch(apiUrl('/api/admin/vehicles.php'))
       .then(r => r.json())
       .then(d => { if (d.success) setVehicles(d.data); })
       .finally(() => setLoading(false));
@@ -145,7 +146,7 @@ export default function AdminVehicles() {
     const fd = new FormData();
     Object.entries(form).forEach(([k, v]) => { if (k !== '_files' && v !== '') fd.append(k, v); });
     (form._files || []).forEach(f => fd.append('images[]', f));
-    const res = await adminFetch('/api/admin/vehicles.php', { method: 'POST', body: fd, headers: {} });
+    const res = await adminFetch(apiUrl('/api/admin/vehicles.php'), { method: 'POST', body: fd, headers: {} });
     const d   = await res.json();
     setSaving(false);
     if (d.success) { setShowAdd(false); setForm(emptyForm); load(); }
@@ -162,12 +163,12 @@ export default function AdminVehicles() {
       editing._files.forEach(f => fd.append('images[]', f));
       fd.append('_method', 'PUT');
       // Use POST with _method override for multipart PUT
-      const res = await adminFetch('/api/admin/vehicles.php', { method: 'POST', body: fd, headers: {} });
+      const res = await adminFetch(apiUrl('/api/admin/vehicles.php'), { method: 'POST', body: fd, headers: {} });
       const d   = await res.json();
       setSaving(false);
       if (d.success) { setEditing(null); load(); } else alert(d.message);
     } else {
-      const res = await adminFetch('/api/admin/vehicles.php', { method: 'PUT', body: JSON.stringify(editing) });
+      const res = await adminFetch(apiUrl('/api/admin/vehicles.php'), { method: 'PUT', body: JSON.stringify(editing) });
       const d   = await res.json();
       setSaving(false);
       if (d.success) { setEditing(null); load(); } else alert(d.message);
@@ -176,7 +177,7 @@ export default function AdminVehicles() {
 
   async function toggleAvailable(v) {
     if (v.available && !confirm(`Deactivate "${v.name}"?`)) return;
-    const res = await adminFetch('/api/admin/vehicles.php', { method:'PUT', body: JSON.stringify({ id:v.id, available: v.available ? 0 : 1 }) });
+    const res = await adminFetch(apiUrl('/api/admin/vehicles.php'), { method:'PUT', body: JSON.stringify({ id:v.id, available: v.available ? 0 : 1 }) });
     const d   = await res.json();
     if (!d.success) alert(d.message);
     else load();
@@ -184,7 +185,7 @@ export default function AdminVehicles() {
 
   async function handleDelete(id) {
     if (!confirm('Delete this vehicle?')) return;
-    await adminFetch(`/api/admin/vehicles.php?id=${id}`, { method:'DELETE' });
+    await adminFetch(apiUrl(`/api/admin/vehicles.php?id=${id}`), { method:'DELETE' });
     load();
   }
 

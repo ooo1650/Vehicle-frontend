@@ -1,4 +1,5 @@
 import { createContext, useContext, useState } from 'react';
+import { apiUrl } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -11,7 +12,7 @@ export function AuthProvider({ children }) {
     setLoading(true);
     setError(null);
 
-    const response = await fetch('/api/admin/login.php', {
+    const response = await fetch(apiUrl('/api/admin/login.php'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, password }),
@@ -46,7 +47,7 @@ export function useAuth() {
 
 /**
  * Helper for admin API calls — automatically adds X-Admin-Id header.
- * Usage: adminFetch('/api/admin/dashboard.php')
+ * Usage: adminFetch(apiUrl('/api/admin/dashboard.php'))
  */
 export function adminFetch(url, options = {}) {
   const admin = JSON.parse(localStorage.getItem('admin') || '{}');

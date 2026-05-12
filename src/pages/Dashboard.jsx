@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
+import { apiUrl } from '../utils/api';
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -14,7 +15,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Fetch this user's booking stats from the backend
-    fetch('/api/user/dashboard.php', {
+    fetch(apiUrl('/api/user/dashboard.php'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ google_id: user.sub }),

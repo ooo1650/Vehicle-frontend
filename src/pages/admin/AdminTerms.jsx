@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { adminFetch } from '../../context/AuthContext';
+import { apiUrl } from '../../utils/api';
 
 const inp = { width:'100%', padding:'9px 12px', border:'1px solid #e2e8f0', borderRadius:'8px', fontSize:'14px', boxSizing:'border-box', fontFamily:'inherit' };
 const lbl = { fontSize:'13px', fontWeight:500, display:'block', marginBottom:'6px' };
@@ -45,7 +46,7 @@ export default function AdminTerms() {
   const [msg,     setMsg]     = useState(null);
 
   function load() {
-    fetch('/api/terms/terms.php')
+    fetch(apiUrl('/api/terms/terms.php'))
       .then(r => r.json())
       .then(d => { if (d.success) setTerms(d.terms); })
       .finally(() => setLoading(false));
@@ -61,7 +62,7 @@ export default function AdminTerms() {
   async function handleAdd() {
     if (!newTerm.title.trim() || !newTerm.content.trim()) { showMsg('Title and content are required', false); return; }
     setSaving(true);
-    const res = await adminFetch('/api/terms/terms.php', { method:'POST', body: JSON.stringify(newTerm) });
+    const res = await adminFetch(apiUrl('/api/terms/terms.php'), { method:'POST', body: JSON.stringify(newTerm) });
     const d   = await res.json();
     setSaving(false);
     if (d.success) { setShowAdd(false); setNewTerm({ title:'', content:'' }); load(); showMsg('Clause added'); }
@@ -71,7 +72,7 @@ export default function AdminTerms() {
   async function handleEdit() {
     if (!editing.title.trim() || !editing.content.trim()) { showMsg('Title and content are required', false); return; }
     setSaving(true);
-    const res = await adminFetch('/api/terms/terms.php', { method:'PUT', body: JSON.stringify(editing) });
+    const res = await adminFetch(apiUrl('/api/terms/terms.php'), { method:'PUT', body: JSON.stringify(editing) });
     const d   = await res.json();
     setSaving(false);
     if (d.success) { setEditing(null); load(); showMsg('Clause updated'); }
@@ -80,7 +81,7 @@ export default function AdminTerms() {
 
   async function handleDelete(id) {
     if (!confirm('Delete this clause?')) return;
-    const res = await adminFetch(`/api/terms/terms.php?id=${id}`, { method:'DELETE' });
+    const res = await adminFetch(apiUrl(`/api/terms/terms.php?id=${id}`), { method:'DELETE' });
     const d   = await res.json();
     if (d.success) { load(); showMsg('Clause deleted'); }
     else showMsg(d.message, false);

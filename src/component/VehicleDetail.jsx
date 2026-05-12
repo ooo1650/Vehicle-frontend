@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './VehicleDetail.css';
+import { apiUrl } from '../utils/api';
 
 // SVG icons — no emojis
 function FuelIcon()  { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 22V6a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v16"/><path d="M3 22h12"/><path d="M15 8h2a2 2 0 0 1 2 2v3a2 2 0 0 0 2 2h0a2 2 0 0 0 2-2V9.5L19 6"/></svg>; }
@@ -17,7 +18,7 @@ export default function VehicleDetail({ vehicleId, onClose }) {
   useEffect(() => {
     setLoading(true);
     setActiveImg(0);
-    fetch(`/api/vehicles/get_vehicle.php?id=${vehicleId}`)
+    fetch(apiUrl(`/api/vehicles/get_vehicle.php?id=${vehicleId}`))
       .then(r => r.json())
       .then(d => { if (d.success) setVehicle(d.vehicle); })
       .finally(() => setLoading(false));

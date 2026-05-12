@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Footer from '../component/Footer';
 import './Booking.css';
+import { apiUrl } from '../utils/api';
 
 const PAYMENT_METHODS = [
   { id: 'esewa',  label: 'eSewa',  sub: 'Digital Wallet', color: '#60bb46' },
@@ -27,7 +28,7 @@ export default function Booking() {
   const [bookingId, setBookingId] = useState(null);
 
   useEffect(() => {
-    fetch('/api/terms/terms.php')
+    fetch(apiUrl('/api/terms/terms.php'))
       .then(r => r.json())
       .then(d => { if (d.success) setTerms(d.terms); })
       .catch(() => {});
@@ -47,7 +48,7 @@ export default function Booking() {
     if (!canSubmit) return;
     setLoading(true);
     try {
-      const res  = await fetch('/api/user/bookings.php', {
+      const res  = await fetch(apiUrl('/api/user/bookings.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

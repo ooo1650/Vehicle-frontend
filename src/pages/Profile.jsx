@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
+import { apiUrl } from '../utils/api';
 
 export default function Profile() {
   const navigate  = useNavigate();
@@ -42,14 +43,14 @@ export default function Profile() {
         const fd = new FormData();
         fd.append('email',   user.email);
         fd.append('picture', picFile);
-        const r    = await fetch('/api/user/upload_avatar.php', { method: 'POST', body: fd });
+        const r    = await fetch(apiUrl('/api/user/upload_avatar.php'), { method: 'POST', body: fd });
         const d    = await r.json();
         if (!d.success) { setSaveError(d.message); return; }
         newPicture = d.picture;
       }
 
       // 2. Update name + DOB
-      const res  = await fetch('/api/user/update_profile.php', {
+      const res  = await fetch(apiUrl('/api/user/update_profile.php'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

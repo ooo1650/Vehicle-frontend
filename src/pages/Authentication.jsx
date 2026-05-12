@@ -3,6 +3,7 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import '../Auth.css';
+import { apiUrl } from '../utils/api';
 
 const GOOGLE_CLIENT_ID = '537729065202-f0287ficblsbjfgp9k5gkg0judpk2nkv.apps.googleusercontent.com';
 
@@ -117,7 +118,7 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch('/api/auth/signin.php', {
+      const res  = await fetch(apiUrl('/api/auth/signin.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: siEmail, password: siPw }),
@@ -151,7 +152,7 @@ export default function Authentication() {
       if (suGoogleId)  fd.append('google_id', suGoogleId);
       if (suPicFile)   fd.append('picture', suPicFile);
 
-      const res  = await fetch('/api/auth/signup.php', { method: 'POST', body: fd });
+      const res  = await fetch(apiUrl('/api/auth/signup.php'), { method: 'POST', body: fd });
       const data = await res.json();
       if (!data.success) return err(data.message);
       setPendingEmail(suEmail.trim());
@@ -167,7 +168,7 @@ export default function Authentication() {
     setLoading(true); clearErr();
     const g = jwtDecode(credentialResponse.credential);
     try {
-      const res  = await fetch('/api/auth/google_login.php', {
+      const res  = await fetch(apiUrl('/api/auth/google_login.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(g),
@@ -201,7 +202,7 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch('/api/auth/verify_otp.php', {
+      const res  = await fetch(apiUrl('/api/auth/verify_otp.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail, otp }),
@@ -234,7 +235,7 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch('/api/auth/forgot_password.php', {
+      const res  = await fetch(apiUrl('/api/auth/forgot_password.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: fpEmail }),
@@ -258,7 +259,7 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch('/api/auth/reset_password.php', {
+      const res  = await fetch(apiUrl('/api/auth/reset_password.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail, password: pw1 }),
@@ -285,7 +286,7 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch('/api/auth/set_password.php', {
+      const res  = await fetch(apiUrl('/api/auth/set_password.php'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: pendingEmail, password: pw1 }),

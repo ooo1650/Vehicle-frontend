@@ -7,7 +7,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { getVehicleById, createBooking } from "../services/bookingService";
 import "./VehicleDetail.css";
 
-const IMG_BASE = import.meta.env.VITE_API_BASE_URL || "http://localhost/Vehicle_Rental_System/backend";
+const IMG_BASE = import.meta.env.VITE_API_BASE_URL || '';
 
 function safeParse(val, fallback = []) {
   if (Array.isArray(val)) return val;

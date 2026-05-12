@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../component/Footer';
 import './MyBookings.css';
+import { apiUrl } from '../utils/api';
 
 const STATUS_META = {
   pending:        { label: 'Pending Review',   bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
@@ -90,7 +91,7 @@ export default function MyBookings() {
   function load() {
     if (!user?.email) return;
     setLoading(true);
-    fetch(`/api/user/bookings.php?email=${encodeURIComponent(user.email)}`)
+    fetch(apiUrl(`/api/user/bookings.php?email=${encodeURIComponent(user.email)}`))
       .then(r => r.json())
       .then(d => { if (d.success) setBookings(d.bookings); })
       .catch(() => {})
@@ -106,7 +107,7 @@ export default function MyBookings() {
   async function cancelBooking(id) {
     setCancelling(id);
     try {
-      const res  = await fetch('/api/user/bookings.php', {
+      const res  = await fetch(apiUrl('/api/user/bookings.php'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, email: user.email, action: 'cancel' }),
@@ -124,7 +125,7 @@ export default function MyBookings() {
   async function saveEdit(id, fields) {
     setSaving(true);
     try {
-      const res  = await fetch('/api/user/bookings.php', {
+      const res  = await fetch(apiUrl('/api/user/bookings.php'), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ id, email: user.email, action: 'edit', ...fields }),
