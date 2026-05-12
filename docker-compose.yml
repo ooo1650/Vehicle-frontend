@@ -1,0 +1,56 @@
+version: "3.9"
+
+services:
+
+  # ── PHP / Apache backend ─────────────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: rocket_backend
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    env_file:
+      - ./backend/.env
+    volumes:
+      # Persist uploaded files outside the container
+      - uploads_data:/var/www/html/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - rocket_net
+
+  # ── MySQL database ───────────────────────────────────────────────────────
+  db:
+    image: mysql:8.0
+    container_name: rocket_db
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      MYSQL_DATABASE: ${DB_NAME:-vehicle_rental}
+      MYSQL_USER: ${DB_USER:-rocket}
+      MYSQL_PASSWORD: ${DB_PASS:-secret}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASS:-rootsecret}
+    ports:
+      - "3307:3306"          # 3307 on host to avoid clash with local MySQL
+    volumes:
+      - db_data:/var/lib/mysql
+      - ./backend/database/setup.sql:/docker-entrypoint-initdb.d/01_setup.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_ROOT_PASS:-rootsecret}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - rocket_net
+
+volumes:
+  db_data:
+  uploads_data:
+
+networks:
+  rocket_net:
+    driver: bridge

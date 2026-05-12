@@ -28,3 +28,7 @@ backend/config/mail.php
 otp_log.txt
 vendor/
 composer.lock
+
+# Environment secrets
+.env
+backend/.env
