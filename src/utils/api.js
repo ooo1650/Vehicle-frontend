@@ -4,10 +4,12 @@
  * Dev:  Vite proxy rewrites /api/... → https://vhecial-backend.onrender.com/...
  *       so BASE stays '' and all fetch('/api/...') calls work as-is.
  *
- * Prod: No proxy exists. VITE_API_BASE_URL is injected at build time.
- *       apiUrl('/api/auth/login.php') → 'https://vhecial-backend.onrender.com/auth/login.php'
+ * Prod: VITE_API_BASE_URL is injected at build time via .env or Vercel env vars.
+ *       Falls back to the hardcoded backend URL if the env var is missing.
  */
-const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
+const BASE =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? '' : 'https://vhecial-backend.onrender.com');
 
 /**
  * Converts a /api/... path to the full backend URL.
@@ -15,6 +17,6 @@ const BASE = import.meta.env.VITE_API_BASE_URL ?? '';
  * In prod it strips /api and prepends the hosted backend URL.
  */
 export function apiUrl(path) {
-  if (!BASE) return path;                          // dev — proxy handles it
-  return BASE + path.replace(/^\/api/, '');        // prod — full URL
+  if (!BASE) return path;                      // dev — proxy handles it
+  return BASE + path.replace(/^\/api/, '');    // prod — full URL
 }

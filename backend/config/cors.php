@@ -1,12 +1,12 @@
 <?php
 // config/cors.php
+// CORS_ORIGIN env var takes priority. Falls back to * for local dev.
 $allowed_origin = getenv('CORS_ORIGIN') ?: '*';
 
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: " . $allowed_origin);
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Requested-With, X-Admin-Id");
-// Only send credentials header when not using wildcard
 if ($allowed_origin !== '*') {
     header("Access-Control-Allow-Credentials: true");
 }
