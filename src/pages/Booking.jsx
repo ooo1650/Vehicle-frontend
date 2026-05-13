@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Footer from '../component/Footer';
 import './Booking.css';
-import { apiUrl } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 const PAYMENT_METHODS = [
   { id: 'esewa',  label: 'eSewa',  sub: 'Digital Wallet', color: '#60bb46' },
@@ -28,8 +28,7 @@ export default function Booking() {
   const [bookingId, setBookingId] = useState(null);
 
   useEffect(() => {
-    fetch(apiUrl('/api/terms/terms.php'))
-      .then(r => r.json())
+    apiFetch('/api/terms/terms.php')
       .then(d => { if (d.success) setTerms(d.terms); })
       .catch(() => {});
   }, []);
@@ -48,10 +47,9 @@ export default function Booking() {
     if (!canSubmit) return;
     setLoading(true);
     try {
-      const res  = await fetch(apiUrl('/api/user/bookings.php'), {
+      const data = await apiFetch('/api/user/bookings.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           email:             user.email,
           vehicle_id:        vehicle.id,
           start_date:        startDate,
@@ -61,14 +59,12 @@ export default function Booking() {
           dropoff_location:  dropoff,
           contact_phone:     phone,
           payment_method:    payment,
-        }),
+        },
       });
-      const data = await res.json();
-      if (!data.success) { setError(data.message); return; }
       setBookingId(data.id);
       setConfirmed(true);
-    } catch {
-      setError('Cannot connect to server. Please try again.');
+    } catch (e) {
+      setError(e.message || 'Cannot connect to server. Please try again.');
     } finally {
       setLoading(false);
     }

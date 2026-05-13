@@ -3,7 +3,7 @@ import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
 import { useNavigate } from 'react-router-dom';
 import '../Auth.css';
-import { apiUrl } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 const GOOGLE_CLIENT_ID = '537729065202-f0287ficblsbjfgp9k5gkg0judpk2nkv.apps.googleusercontent.com';
 
@@ -118,18 +118,15 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch(apiUrl('/api/auth/signin.php'), {
+      await apiFetch('/api/auth/signin.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: siEmail, password: siPw }),
+        body: { email: siEmail, password: siPw },
       });
-      const data = await res.json();
-      if (!data.success) return err(data.message);
       setPendingEmail(siEmail);
       setOtpMode('signin');
       setScreen(S.OTP);
-    } catch { err('Cannot reach the server. Is the PHP server running?'); }
-    finally  { setLoading(false); }
+    } catch (e) { err(e.message); }
+    finally     { setLoading(false); }
   }
 
   // ── Sign Up ───────────────────────────────────────────────────────────────
@@ -144,22 +141,33 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const fd = new FormData();
-      fd.append('given_name',  suFirst.trim());
-      fd.append('family_name', suLast.trim());
-      fd.append('email',       suEmail.trim());
-      fd.append('dob',         suDob);
-      if (suGoogleId)  fd.append('google_id', suGoogleId);
-      if (suPicFile)   fd.append('picture', suPicFile);
+      // Use FormData only when a picture file is attached, otherwise JSON
+      let body;
+      if (suPicFile) {
+        const fd = new FormData();
+        fd.append('given_name',  suFirst.trim());
+        fd.append('family_name', suLast.trim());
+        fd.append('email',       suEmail.trim());
+        fd.append('dob',         suDob);
+        if (suGoogleId) fd.append('google_id', suGoogleId);
+        fd.append('picture', suPicFile);
+        body = fd;
+      } else {
+        body = {
+          given_name:  suFirst.trim(),
+          family_name: suLast.trim(),
+          email:       suEmail.trim(),
+          dob:         suDob,
+          ...(suGoogleId ? { google_id: suGoogleId } : {}),
+        };
+      }
 
-      const res  = await fetch(apiUrl('/api/auth/signup.php'), { method: 'POST', body: fd });
-      const data = await res.json();
-      if (!data.success) return err(data.message);
+      await apiFetch('/api/auth/signup.php', { method: 'POST', body });
       setPendingEmail(suEmail.trim());
       setOtpMode('signup');
       setScreen(S.OTP);
-    } catch { err('Cannot reach the server. Is the PHP server running?'); }
-    finally  { setLoading(false); }
+    } catch (e) { err(e.message); }
+    finally     { setLoading(false); }
   }
 
   // ── Google OAuth ──────────────────────────────────────────────────────────
@@ -168,16 +176,11 @@ export default function Authentication() {
     setLoading(true); clearErr();
     const g = jwtDecode(credentialResponse.credential);
     try {
-      const res  = await fetch(apiUrl('/api/auth/google_login.php'), {
+      const data = await apiFetch('/api/auth/google_login.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(g),
+        body: g,
       });
-      const data = await res.json();
-      if (!data.success) return err(data.message || 'Google sign-in failed');
-
       if (data.is_new_user) {
-        // Pre-fill sign-up form
         setSuFirst(data.given_name  || '');
         setSuLast(data.family_name  || '');
         setSuEmail(data.email       || '');
@@ -185,13 +188,12 @@ export default function Authentication() {
         setSuGoogleId(data.google_id || '');
         setScreen(S.SIGNUP);
       } else {
-        // Returning user — OTP sent
         setPendingEmail(data.email);
         setOtpMode('signin');
         setScreen(S.OTP);
       }
-    } catch { err('Cannot reach the server. Is the PHP server running?'); }
-    finally  { setLoading(false); }
+    } catch (e) { err(e.message || 'Google sign-in failed'); }
+    finally     { setLoading(false); }
   }
 
   // ── Verify OTP ────────────────────────────────────────────────────────────
@@ -202,28 +204,21 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch(apiUrl('/api/auth/verify_otp.php'), {
+      const data = await apiFetch('/api/auth/verify_otp.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: pendingEmail, otp }),
+        body: { email: pendingEmail, otp },
       });
-      const data = await res.json();
-      if (!data.success) return err(data.message);
-
       if (otpMode === 'forgot') {
-        // OTP verified for password reset — go to reset screen
         setPw1(''); setPw2('');
         setScreen(S.RESET_PASSWORD);
       } else if (data.needs_password) {
-        // New sign-up — go set password
         setScreen(S.SET_PASSWORD);
       } else {
-        // Sign-in complete
         localStorage.setItem('user', JSON.stringify(data.user));
         navigate('/dashboard');
       }
-    } catch { err('Cannot reach the server. Is the PHP server running?'); }
-    finally  { setLoading(false); }
+    } catch (e) { err(e.message); }
+    finally     { setLoading(false); }
   }
 
   // ── Forgot Password ───────────────────────────────────────────────────────
@@ -235,19 +230,16 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch(apiUrl('/api/auth/forgot_password.php'), {
+      await apiFetch('/api/auth/forgot_password.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: fpEmail }),
+        body: { email: fpEmail },
       });
-      const data = await res.json();
-      if (!data.success) return err(data.message);
       setPendingEmail(fpEmail);
       setOtpMode('forgot');
       setOtp('');
       setScreen(S.OTP);
-    } catch { err('Cannot reach the server. Is the PHP server running?'); }
-    finally  { setLoading(false); }
+    } catch (e) { err(e.message); }
+    finally     { setLoading(false); }
   }
 
   // ── Reset Password ────────────────────────────────────────────────────────
@@ -259,22 +251,18 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch(apiUrl('/api/auth/reset_password.php'), {
+      await apiFetch('/api/auth/reset_password.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: pendingEmail, password: pw1 }),
+        body: { email: pendingEmail, password: pw1 },
       });
-      const data = await res.json();
-      if (!data.success) return err(data.message);
-      // Success — go back to sign in with a success hint
       setScreen(S.SIGNIN);
       setSiEmail(pendingEmail);
       setError(null);
       setSuccessMsg('Password reset successfully. You can now sign in.');
       setPendingEmail('');
       setFpEmail('');
-    } catch { err('Cannot reach the server. Is the PHP server running?'); }
-    finally  { setLoading(false); }
+    } catch (e) { err(e.message); }
+    finally     { setLoading(false); }
   }
 
   // ── Set Password ──────────────────────────────────────────────────────────
@@ -286,17 +274,14 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      const res  = await fetch(apiUrl('/api/auth/set_password.php'), {
+      const data = await apiFetch('/api/auth/set_password.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: pendingEmail, password: pw1 }),
+        body: { email: pendingEmail, password: pw1 },
       });
-      const data = await res.json();
-      if (!data.success) return err(data.message);
       localStorage.setItem('user', JSON.stringify(data.user));
       navigate('/dashboard');
-    } catch { err('Cannot reach the server. Is the PHP server running?'); }
-    finally  { setLoading(false); }
+    } catch (e) { err(e.message); }
+    finally     { setLoading(false); }
   }
 
   // ── Render ────────────────────────────────────────────────────────────────

@@ -1,7 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useState, useEffect } from 'react';
 import { adminFetch } from '../../context/AuthContext';
 import './AdminDashboard.css';
-import { apiUrl } from '../../utils/api';
 
 const STATUS_COLORS = {
   pending:   { bg: '#fffbeb', color: '#b45309' },
@@ -18,9 +17,8 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    adminFetch(apiUrl('/api/admin/dashboard.php'))
-      .then((r) => r.json())
-      .then((data) => {
+    adminFetch('/api/admin/dashboard.php')
+      .then((r) => r.json())      .then((data) => {
         if (data.success) {
           setCounts(data.data.counts);
           setRevenue(data.data.revenue);

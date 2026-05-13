@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../component/Footer';
 import './MyBookings.css';
-import { apiUrl } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 const STATUS_META = {
   pending:        { label: 'Pending Review',   bg: '#fffbeb', color: '#b45309', border: '#fde68a' },
@@ -91,8 +91,7 @@ export default function MyBookings() {
   function load() {
     if (!user?.email) return;
     setLoading(true);
-    fetch(apiUrl(`/api/user/bookings.php?email=${encodeURIComponent(user.email)}`))
-      .then(r => r.json())
+    apiFetch(`/api/user/bookings.php?email=${encodeURIComponent(user.email)}`)
       .then(d => { if (d.success) setBookings(d.bookings); })
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -107,14 +106,12 @@ export default function MyBookings() {
   async function cancelBooking(id) {
     setCancelling(id);
     try {
-      const res  = await fetch(apiUrl('/api/user/bookings.php'), {
+      const data = await apiFetch('/api/user/bookings.php', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, email: user.email, action: 'cancel' }),
+        body: { id, email: user.email, action: 'cancel' },
       });
-      const data = await res.json();
-      setMsgMap(prev => ({ ...prev, [id]: { text: data.message, ok: data.success } }));
-      if (data.success) load();
+      setMsgMap(prev => ({ ...prev, [id]: { text: data.message, ok: true } }));
+      load();
     } catch {
       setMsgMap(prev => ({ ...prev, [id]: { text: 'Failed to cancel. Try again.', ok: false } }));
     } finally {
@@ -125,14 +122,13 @@ export default function MyBookings() {
   async function saveEdit(id, fields) {
     setSaving(true);
     try {
-      const res  = await fetch(apiUrl('/api/user/bookings.php'), {
+      const data = await apiFetch('/api/user/bookings.php', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id, email: user.email, action: 'edit', ...fields }),
+        body: { id, email: user.email, action: 'edit', ...fields },
       });
-      const data = await res.json();
-      setMsgMap(prev => ({ ...prev, [id]: { text: data.message, ok: data.success } }));
-      if (data.success) { setEditing(null); load(); }
+      setMsgMap(prev => ({ ...prev, [id]: { text: data.message, ok: true } }));
+      setEditing(null);
+      load();
     } catch {
       setMsgMap(prev => ({ ...prev, [id]: { text: 'Failed to save. Try again.', ok: false } }));
     } finally {

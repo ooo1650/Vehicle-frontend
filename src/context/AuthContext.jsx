@@ -1,5 +1,5 @@
 import { createContext, useContext, useState } from 'react';
-import { apiUrl } from '../utils/api';
+import { apiUrl, apiFetch } from '../utils/api';
 
 const AuthContext = createContext(null);
 
@@ -7,27 +7,21 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState(null);
 
-  // Called when admin submits the login form
   async function login(username, password) {
     setLoading(true);
     setError(null);
-
-    const response = await fetch(apiUrl('/api/admin/login.php'), {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ username, password }),
-    });
-
-    const data = await response.json();
-    setLoading(false);
-
-    if (!data.success) {
-      setError(data.message || 'Login failed');
-      throw new Error(data.message);
+    try {
+      const data = await apiFetch('/api/admin/login.php', {
+        method: 'POST',
+        body: { username, password },
+      });
+      localStorage.setItem('admin', JSON.stringify(data.admin));
+    } catch (e) {
+      setError(e.message || 'Login failed');
+      throw e;
+    } finally {
+      setLoading(false);
     }
-
-    // Save admin info to localStorage (includes id and username)
-    localStorage.setItem('admin', JSON.stringify(data.admin));
   }
 
   function logout() {
@@ -46,17 +40,27 @@ export function useAuth() {
 }
 
 /**
- * Helper for admin API calls — automatically adds X-Admin-Id header.
- * Usage: adminFetch(apiUrl('/api/admin/dashboard.php'))
+ * Admin fetch — adds X-Admin-Id header and always sends/receives JSON.
+ * For file uploads pass a FormData as body.
  */
-export function adminFetch(url, options = {}) {
+export function adminFetch(path, options = {}) {
   const admin = JSON.parse(localStorage.getItem('admin') || '{}');
-  return fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Admin-Id': admin.id || '',
-      ...(options.headers || {}),
-    },
+  const { body, headers: extraHeaders = {}, ...rest } = options;
+
+  const isFormData = body instanceof FormData;
+
+  const headers = {
+    Accept: 'application/json',
+    'X-Admin-Id': admin.id || '',
+    ...(!isFormData && body !== undefined
+      ? { 'Content-Type': 'application/json' }
+      : {}),
+    ...extraHeaders,
+  };
+
+  return fetch(apiUrl(path), {
+    ...rest,
+    headers,
+    body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
 }

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { adminFetch } from '../../context/AuthContext';
-import { apiUrl } from '../../utils/api';
 
 const STATUSES = ['All', 'pending', 'pending_review', 'confirmed', 'completed', 'cancelled'];
 
@@ -23,8 +22,8 @@ export default function AdminBookings() {
   function load() {
     setLoading(true);
     const url = filter === 'All'
-      ? apiUrl('/api/admin/bookings.php')
-      : apiUrl(`/api/admin/bookings.php?status=${filter}`);
+      ? '/api/admin/bookings.php'
+      : `/api/admin/bookings.php?status=${filter}`;
 
     adminFetch(url)
       .then(r => r.json())
@@ -36,9 +35,9 @@ export default function AdminBookings() {
 
   async function updateStatus(id, status, note) {
     setSaving(id);
-    await adminFetch(apiUrl('/api/admin/bookings.php'), {
+    await adminFetch('/api/admin/bookings.php', {
       method: 'PUT',
-      body: JSON.stringify({ id, status, admin_note: note || '' }),
+      body: { id, status, admin_note: note || '' },
     });
     setSaving(null);
     setExpanded(null);
@@ -47,7 +46,7 @@ export default function AdminBookings() {
 
   async function handleDelete(id) {
     if (!confirm('Delete this booking permanently?')) return;
-    await adminFetch(apiUrl(`/api/admin/bookings.php?id=${id}`), { method: 'DELETE' });
+    await adminFetch(`/api/admin/bookings.php?id=${id}`, { method: 'DELETE' });
     load();
   }
 

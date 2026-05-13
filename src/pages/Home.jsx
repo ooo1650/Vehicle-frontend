@@ -4,7 +4,7 @@ import VehicleCard from '../component/VehicleCard';
 import VehicleDetail from '../component/VehicleDetail';
 import Footer from '../component/Footer';
 import './Home.css';
-import { apiUrl } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 const CATEGORIES = [
   { label: 'Car',        icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg> },
@@ -38,8 +38,7 @@ export default function Home() {
   const [selectedId, setSelectedId] = useState(null);
 
   useEffect(() => {
-    fetch(apiUrl('/api/vehicles/get_vehicles.php'))
-      .then((r) => r.json())
+    apiFetch('/api/vehicles/get_vehicles.php')
       .then((data) => { if (data.success) setFeatured(data.vehicles.slice(0, 6)); })
       .catch(() => {});
   }, []);

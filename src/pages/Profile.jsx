@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
-import { apiUrl } from '../utils/api';
+import { apiFetch } from '../utils/api';
 
 export default function Profile() {
   const navigate  = useNavigate();
@@ -43,25 +43,19 @@ export default function Profile() {
         const fd = new FormData();
         fd.append('email',   user.email);
         fd.append('picture', picFile);
-        const r    = await fetch(apiUrl('/api/user/upload_avatar.php'), { method: 'POST', body: fd });
-        const d    = await r.json();
-        if (!d.success) { setSaveError(d.message); return; }
+        const d = await apiFetch('/api/user/upload_avatar.php', { method: 'POST', body: fd });
         newPicture = d.picture;
       }
 
-      // 2. Update name + DOB
-      const res  = await fetch(apiUrl('/api/user/update_profile.php'), {
+      const data = await apiFetch('/api/user/update_profile.php', {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: {
           email:       user.email,
           given_name:  firstName.trim(),
           family_name: lastName.trim(),
           dob:         dob,
-        }),
+        },
       });
-      const data = await res.json();
-      if (!data.success) { setSaveError(data.message); return; }
 
       const updated = {
         ...user,
@@ -77,8 +71,8 @@ export default function Profile() {
       setPicPreview(null);
       setSaveSuccess(true);
       setEditing(false);
-    } catch {
-      setSaveError('Could not connect to server.');
+    } catch (e) {
+      setSaveError(e.message || 'Could not connect to server.');
     } finally {
       setSaving(false);
     }
