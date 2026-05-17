@@ -257,6 +257,19 @@ export default function MyBookings() {
         method: 'PUT',
         body: { id, email: user.email, action: 'edit', ...fields },
       });
+
+      // Check if extra payment is needed (new total > already paid)
+      const booking = bookings.find(b => b.id === id);
+      const paidAmount = Number(booking?.paid_amount || 0);
+      const newTotal   = Number(fields.total_price || 0);
+
+      if (booking?.payment_method === 'esewa' && paidAmount > 0 && newTotal > paidAmount) {
+        // Extra payment required — redirect to eSewa immediately
+        setEditing(null);
+        await handlePayNow(id);
+        return;
+      }
+
       setMsgMap(prev => ({ ...prev, [id]: { text: data.message, ok: true } }));
       setEditing(null);
       load();
@@ -267,7 +280,6 @@ export default function MyBookings() {
     }
   }
 
-  // Initiate eSewa payment for unpaid / top-up
   async function handlePayNow(bookingId) {
     setPaying(bookingId);
     try {
@@ -278,6 +290,7 @@ export default function MyBookings() {
 
       if (!data.success) {
         setMsgMap(prev => ({ ...prev, [bookingId]: { text: data.message, ok: false } }));
+        setPaying(null);
         return;
       }
 
@@ -298,6 +311,7 @@ export default function MyBookings() {
 
       document.body.appendChild(form);
       form.submit();
+      // Keep paying state — page is navigating away
     } catch (e) {
       setMsgMap(prev => ({ ...prev, [bookingId]: { text: e.message || 'Payment failed. Try again.', ok: false } }));
       setPaying(null);
@@ -351,12 +365,14 @@ export default function MyBookings() {
               const img       = b.vehicle_image || 'https://placehold.co/110x76/e5e7eb/9ca3af?text=No+Image';
               const canEdit   = EDITABLE_STATUSES.includes(b.status);
               const isEditing = editing === b.id;
-              const isPaid    = b.payment_status === 'completed';
-              const isEsewa   = b.payment_method === 'esewa';
-              // Show Pay Now if eSewa booking and not yet paid
-              const needsPay  = isEsewa && !isPaid && !['cancelled'].includes(b.status);
-              // Show receipt if paid
-              const canReceipt = isPaid;
+              const isPaid     = b.payment_status === 'completed';
+              const isEsewa    = b.payment_method === 'esewa';
+              // payment_status is NULL when no payment record exists yet
+              const hasNoPay   = b.payment_status === null || b.payment_status === undefined;
+              // Show Pay Now: eSewa booking, not paid, not cancelled/completed
+              const needsPay   = isEsewa && !isPaid && !['cancelled', 'completed'].includes(b.status);
+              // Show receipt: paid via eSewa
+              const canReceipt = isEsewa && isPaid;
 
               return (
                 <div key={b.id} className="mb-card">
@@ -434,17 +450,6 @@ export default function MyBookings() {
                         <span className="mb-price">NPR {Number(b.total_price).toLocaleString()}</span>
 
                         <div className="mb-action-row">
-                          {/* Pay Now button */}
-                          {needsPay && (
-                            <button
-                              className="mb-pay-btn"
-                              disabled={paying === b.id}
-                              onClick={() => handlePayNow(b.id)}
-                            >
-                              {paying === b.id ? 'Redirecting…' : 'Pay with eSewa'}
-                            </button>
-                          )}
-
                           {/* Receipt button */}
                           {canReceipt && (
                             <button
@@ -483,6 +488,28 @@ export default function MyBookings() {
                           )}
                         </div>
                       </div>
+
+                      {/* Pay Now — full width prominent row */}
+                      {needsPay && (
+                        <div className="mb-pay-row">
+                          <button
+                            className="mb-pay-btn"
+                            disabled={paying === b.id}
+                            onClick={() => handlePayNow(b.id)}
+                          >
+                            {paying === b.id ? (
+                              'Redirecting to eSewa…'
+                            ) : (
+                              <>
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                  <path d="M5 12h14M12 5l7 7-7 7"/>
+                                </svg>
+                                Pay NPR {Number(b.total_price).toLocaleString()} with eSewa
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
 
                       {msgMap[b.id] && (
                         <p style={{ fontSize: '12px', margin: '6px 0 0', color: msgMap[b.id].ok ? '#16a34a' : '#dc2626' }}>
