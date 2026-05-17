@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Footer from '../component/Footer';
 import './MyBookings.css';
@@ -14,6 +14,114 @@ const STATUS_META = {
 
 const EDITABLE_STATUSES = ['pending', 'pending_review'];
 
+// ── Receipt modal ─────────────────────────────────────────────────────────
+function ReceiptModal({ booking, onClose }) {
+  const printRef = useRef();
+
+  function handlePrint() {
+    const content = printRef.current.innerHTML;
+    const win = window.open('', '_blank');
+    win.document.write(`
+      <html><head><title>Receipt #${booking.id}</title>
+      <style>
+        body { font-family: Arial, sans-serif; padding: 32px; color: #1e293b; max-width: 600px; margin: 0 auto; }
+        h2 { color: #2563eb; margin: 0 0 4px; }
+        .sub { color: #64748b; font-size: 13px; margin: 0 0 24px; }
+        table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+        td { padding: 8px 0; font-size: 14px; border-bottom: 1px solid #f1f5f9; }
+        td:last-child { text-align: right; font-weight: 600; }
+        .total td { font-size: 16px; font-weight: 700; border-bottom: none; padding-top: 12px; }
+        .badge { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; }
+        .paid { background: #f0fdf4; color: #15803d; }
+        .footer { margin-top: 32px; font-size: 12px; color: #94a3b8; text-align: center; }
+      </style></head><body>${content}</body></html>
+    `);
+    win.document.close();
+    win.focus();
+    win.print();
+    win.close();
+  }
+
+  const days = Math.max(1, Math.ceil(
+    (new Date(booking.end_date) - new Date(booking.start_date)) / 86400000
+  ));
+
+  function fmt(d) {
+    if (!d) return '—';
+    return new Date(d).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+  }
+
+  return (
+    <div className="mb-modal-overlay" onClick={onClose}>
+      <div className="mb-modal" onClick={e => e.stopPropagation()}>
+        <div className="mb-modal-header">
+          <h3>Payment Receipt</h3>
+          <button className="mb-modal-close" onClick={onClose}>✕</button>
+        </div>
+
+        <div ref={printRef}>
+          <h2 style={{ color: '#2563eb', margin: '0 0 4px' }}>Mero Gadi</h2>
+          <p className="sub" style={{ color: '#64748b', fontSize: '13px', margin: '0 0 20px' }}>
+            Booking Receipt · Ref #{booking.id}
+          </p>
+
+          <table>
+            <tbody>
+              <tr><td>Vehicle</td><td>{booking.vehicle_name}</td></tr>
+              <tr><td>Type</td><td>{booking.vehicle_type} · {booking.fuel_type}</td></tr>
+              <tr><td>Pick-up</td><td>{booking.pickup_location || '—'}</td></tr>
+              {booking.dropoff_location && <tr><td>Drop-off</td><td>{booking.dropoff_location}</td></tr>}
+              <tr><td>Start Date</td><td>{fmt(booking.start_date)}</td></tr>
+              <tr><td>End Date</td><td>{fmt(booking.end_date)}</td></tr>
+              <tr><td>Duration</td><td>{days} day{days > 1 ? 's' : ''}</td></tr>
+              <tr><td>Daily Rate</td><td>NPR {Number(booking.price_per_day).toLocaleString()}</td></tr>
+              <tr><td>Contact</td><td>{booking.contact_phone || '—'}</td></tr>
+              <tr><td>Payment Method</td><td style={{ textTransform: 'capitalize' }}>{booking.payment_method}</td></tr>
+              <tr><td>Payment Status</td>
+                <td>
+                  <span className={`badge ${booking.payment_status === 'completed' ? 'paid' : ''}`}
+                    style={{ background: booking.payment_status === 'completed' ? '#f0fdf4' : '#fef9c3',
+                             color: booking.payment_status === 'completed' ? '#15803d' : '#854d0e' }}>
+                    {booking.payment_status === 'completed' ? '✓ Paid' : 'Unpaid'}
+                  </span>
+                </td>
+              </tr>
+              {booking.esewa_transaction_id && (
+                <tr><td>eSewa Ref</td><td style={{ fontSize: '12px' }}>{booking.esewa_transaction_id}</td></tr>
+              )}
+              {booking.paid_at && (
+                <tr><td>Paid On</td><td>{fmt(booking.paid_at)}</td></tr>
+              )}
+            </tbody>
+            <tfoot>
+              <tr className="total">
+                <td>Total Amount</td>
+                <td style={{ color: '#2563eb' }}>NPR {Number(booking.total_price).toLocaleString()}</td>
+              </tr>
+            </tfoot>
+          </table>
+
+          <p className="footer" style={{ marginTop: '24px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
+            Thank you for choosing Mero Gadi · This is a computer-generated receipt
+          </p>
+        </div>
+
+        <div className="mb-modal-actions">
+          <button className="mb-receipt-print-btn" onClick={handlePrint}>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              <polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/>
+              <rect x="6" y="14" width="12" height="8"/>
+            </svg>
+            Print / Save PDF
+          </button>
+          <button className="mb-modal-close-btn" onClick={onClose}>Close</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Edit panel ────────────────────────────────────────────────────────────
 function EditPanel({ booking, onSave, onCancel, saving }) {
   const [pickup,  setPickup]  = useState(booking.pickup_location  || '');
   const [dropoff, setDropoff] = useState(booking.dropoff_location || '');
@@ -24,7 +132,9 @@ function EditPanel({ booking, onSave, onCancel, saving }) {
   const days = start && end
     ? Math.max(0, Math.ceil((new Date(end) - new Date(start)) / 86400000))
     : 0;
-  const total = days * Number(booking.price_per_day || 0);
+  const newTotal   = days * Number(booking.price_per_day || 0);
+  const paidAmount = Number(booking.paid_amount || 0);
+  const extraDue   = Math.max(0, newTotal - paidAmount);
 
   const canSave = pickup.trim() && phone.trim() && days > 0;
 
@@ -56,18 +166,36 @@ function EditPanel({ booking, onSave, onCancel, saving }) {
         </div>
         {days > 0 && (
           <div className="mb-edit-field mb-edit-summary">
-            <label>Duration / Total</label>
-            <span>{days} day{days > 1 ? 's' : ''} — NPR {(days * Number(booking.price_per_day || 0)).toLocaleString()}</span>
+            <label>Duration / New Total</label>
+            <span>{days} day{days > 1 ? 's' : ''} — NPR {newTotal.toLocaleString()}</span>
           </div>
         )}
       </div>
+
+      {/* Extra payment notice */}
+      {days > 0 && paidAmount > 0 && extraDue > 0 && (
+        <div className="mb-edit-topup-notice">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2">
+            <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+          </svg>
+          <span>
+            You have already paid <strong>NPR {paidAmount.toLocaleString()}</strong>.
+            Saving this edit will require an additional payment of{' '}
+            <strong>NPR {extraDue.toLocaleString()}</strong> via eSewa.
+          </span>
+        </div>
+      )}
+
       <div className="mb-edit-actions">
         <button
           className="mb-save-btn"
           disabled={!canSave || saving}
-          onClick={() => onSave({ pickup_location: pickup, dropoff_location: dropoff, contact_phone: phone, start_date: start, end_date: end, total_price: total })}
+          onClick={() => onSave({
+            pickup_location: pickup, dropoff_location: dropoff,
+            contact_phone: phone, start_date: start, end_date: end, total_price: newTotal,
+          })}
         >
-          {saving ? 'Saving…' : 'Save & Resubmit'}
+          {saving ? 'Saving…' : (extraDue > 0 ? 'Save & Pay Extra' : 'Save & Resubmit')}
         </button>
         <button className="mb-edit-cancel-btn" onClick={onCancel}>Discard</button>
       </div>
@@ -76,6 +204,7 @@ function EditPanel({ booking, onSave, onCancel, saving }) {
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────
 export default function MyBookings() {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -84,9 +213,11 @@ export default function MyBookings() {
   const [loading,    setLoading]    = useState(true);
   const [tab,        setTab]        = useState('active');
   const [cancelling, setCancelling] = useState(null);
-  const [editing,    setEditing]    = useState(null);   // booking id
+  const [editing,    setEditing]    = useState(null);
   const [saving,     setSaving]     = useState(false);
-  const [msgMap,     setMsgMap]     = useState({});     // { [id]: { text, ok } }
+  const [paying,     setPaying]     = useState(null);
+  const [msgMap,     setMsgMap]     = useState({});
+  const [receipt,    setReceipt]    = useState(null); // booking for receipt modal
 
   function load() {
     if (!user?.email) return;
@@ -136,6 +267,43 @@ export default function MyBookings() {
     }
   }
 
+  // Initiate eSewa payment for unpaid / top-up
+  async function handlePayNow(bookingId) {
+    setPaying(bookingId);
+    try {
+      const data = await apiFetch('/api/payment/esewa_topup.php', {
+        method: 'POST',
+        body: { email: user.email, booking_id: bookingId },
+      });
+
+      if (!data.success) {
+        setMsgMap(prev => ({ ...prev, [bookingId]: { text: data.message, ok: false } }));
+        return;
+      }
+
+      sessionStorage.setItem('esewa_booking_id', bookingId);
+
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.gateway_url;
+      form.style.display = 'none';
+
+      Object.entries(data.params).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (e) {
+      setMsgMap(prev => ({ ...prev, [bookingId]: { text: e.message || 'Payment failed. Try again.', ok: false } }));
+      setPaying(null);
+    }
+  }
+
   function fmt(dateStr) {
     if (!dateStr) return '—';
     return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -179,10 +347,16 @@ export default function MyBookings() {
         ) : (
           <div className="mb-list">
             {shown.map(b => {
-              const meta    = STATUS_META[b.status] || STATUS_META.pending;
-              const img     = b.vehicle_image || 'https://placehold.co/110x76/e5e7eb/9ca3af?text=No+Image';
-              const canEdit = EDITABLE_STATUSES.includes(b.status);
+              const meta      = STATUS_META[b.status] || STATUS_META.pending;
+              const img       = b.vehicle_image || 'https://placehold.co/110x76/e5e7eb/9ca3af?text=No+Image';
+              const canEdit   = EDITABLE_STATUSES.includes(b.status);
               const isEditing = editing === b.id;
+              const isPaid    = b.payment_status === 'completed';
+              const isEsewa   = b.payment_method === 'esewa';
+              // Show Pay Now if eSewa booking and not yet paid
+              const needsPay  = isEsewa && !isPaid && !['cancelled'].includes(b.status);
+              // Show receipt if paid
+              const canReceipt = isPaid;
 
               return (
                 <div key={b.id} className="mb-card">
@@ -211,6 +385,16 @@ export default function MyBookings() {
                     </div>
                   )}
 
+                  {/* Unpaid warning */}
+                  {needsPay && (
+                    <div className="mb-unpaid-notice">
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#b45309" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                      </svg>
+                      <span>Payment pending — complete your eSewa payment to confirm this booking.</span>
+                    </div>
+                  )}
+
                   <div className="mb-card-body">
                     <img src={img} alt={b.vehicle_name} className="mb-vehicle-img" />
 
@@ -223,12 +407,20 @@ export default function MyBookings() {
                             {b.dropoff_location ? ` → ${b.dropoff_location}` : ''}
                           </p>
                         </div>
-                        <span
-                          className="mb-status-badge"
-                          style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
-                        >
-                          {meta.label}
-                        </span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
+                          <span
+                            className="mb-status-badge"
+                            style={{ background: meta.bg, color: meta.color, border: `1px solid ${meta.border}` }}
+                          >
+                            {meta.label}
+                          </span>
+                          {/* Payment badge */}
+                          {isEsewa && (
+                            <span className={`mb-payment-badge ${isPaid ? 'paid' : 'unpaid'}`}>
+                              {isPaid ? '✓ Paid' : '⏳ Unpaid'}
+                            </span>
+                          )}
+                        </div>
                       </div>
 
                       <div className="mb-card-meta">
@@ -241,28 +433,55 @@ export default function MyBookings() {
                       <div className="mb-card-footer">
                         <span className="mb-price">NPR {Number(b.total_price).toLocaleString()}</span>
 
-                        {!['completed', 'cancelled'].includes(b.status) && (
-                          <div className="mb-action-row">
-                            {canEdit && (
-                              <button
-                                className="mb-edit-btn"
-                                onClick={() => setEditing(isEditing ? null : b.id)}
-                              >
-                                {isEditing ? 'Close' : 'Edit'}
-                              </button>
-                            )}
+                        <div className="mb-action-row">
+                          {/* Pay Now button */}
+                          {needsPay && (
                             <button
-                              className="mb-cancel-btn"
-                              disabled={cancelling === b.id}
-                              onClick={() => {
-                                if (window.confirm('Cancel this booking? Your advance will be 100% refunded.'))
-                                  cancelBooking(b.id);
-                              }}
+                              className="mb-pay-btn"
+                              disabled={paying === b.id}
+                              onClick={() => handlePayNow(b.id)}
                             >
-                              {cancelling === b.id ? 'Cancelling…' : 'Cancel'}
+                              {paying === b.id ? 'Redirecting…' : 'Pay with eSewa'}
                             </button>
-                          </div>
-                        )}
+                          )}
+
+                          {/* Receipt button */}
+                          {canReceipt && (
+                            <button
+                              className="mb-receipt-btn"
+                              onClick={() => setReceipt(b)}
+                            >
+                              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                                <polyline points="14 2 14 8 20 8"/>
+                              </svg>
+                              Receipt
+                            </button>
+                          )}
+
+                          {!['completed', 'cancelled'].includes(b.status) && (
+                            <>
+                              {canEdit && (
+                                <button
+                                  className="mb-edit-btn"
+                                  onClick={() => setEditing(isEditing ? null : b.id)}
+                                >
+                                  {isEditing ? 'Close' : 'Edit'}
+                                </button>
+                              )}
+                              <button
+                                className="mb-cancel-btn"
+                                disabled={cancelling === b.id}
+                                onClick={() => {
+                                  if (window.confirm('Cancel this booking? Your advance will be 100% refunded.'))
+                                    cancelBooking(b.id);
+                                }}
+                              >
+                                {cancelling === b.id ? 'Cancelling…' : 'Cancel'}
+                              </button>
+                            </>
+                          )}
+                        </div>
                       </div>
 
                       {msgMap[b.id] && (
@@ -289,6 +508,9 @@ export default function MyBookings() {
         )}
       </div>
       <Footer />
+
+      {/* Receipt modal */}
+      {receipt && <ReceiptModal booking={receipt} onClose={() => setReceipt(null)} />}
     </div>
   );
 }
