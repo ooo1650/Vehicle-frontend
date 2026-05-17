@@ -127,6 +127,17 @@ export default function AdminBookings() {
                       }}>
                         {meta.label}
                       </span>
+                      {/* Payment status badge */}
+                      {b.payment_method === 'esewa' && (
+                        <span style={{
+                          padding:'3px 10px', borderRadius:'20px', fontSize:'12px', fontWeight:600,
+                          background: b.payment_status === 'completed' ? '#f0fdf4' : '#fef9c3',
+                          color:      b.payment_status === 'completed' ? '#15803d'  : '#854d0e',
+                          border:     `1px solid ${b.payment_status === 'completed' ? '#bbf7d0' : '#fde68a'}`,
+                        }}>
+                          {b.payment_status === 'completed' ? '✓ Paid' : '⏳ Unpaid'}
+                        </span>
+                      )}
                     </div>
                     <div style={{ display:'flex', flexWrap:'wrap', gap:'8px 20px', fontSize:'13px', color:'#64748b' }}>
                       <span>{b.given_name} {b.family_name}</span>

@@ -64,7 +64,8 @@ export default function EsewaSuccess() {
           <h2>Payment Successful!</h2>
           {bookingId && <p className="esewa-ref">Booking Reference #{bookingId}</p>}
           <p className="esewa-msg">
-            Your eSewa payment was verified and your booking is now <strong>confirmed</strong>.
+            Your eSewa payment was verified. Your booking is now <strong>under review</strong> — 
+            you will be notified within 1 hour once confirmed.
           </p>
           <div className="esewa-actions">
             <button className="esewa-btn primary" onClick={() => navigate('/my-bookings')}>
