@@ -294,6 +294,25 @@
 .bk-confirm-btn:hover:not(.disabled) { background: #1d4ed8; }
 .bk-confirm-btn.disabled { background: #94a3b8; cursor: not-allowed; }
 
+/* eSewa green button */
+.bk-confirm-btn.esewa { background: #60bb46; }
+.bk-confirm-btn.esewa:hover:not(.disabled) { background: #4ea336; }
+
+/* eSewa sandbox info notice */
+.bk-esewa-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 12px;
+  color: #166534;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
 .bk-summary-hint {
   font-size: 12px;
   color: #94a3b8;

@@ -14,16 +14,16 @@ export default function Booking() {
   const navigate   = useNavigate();
   const vehicle    = state?.vehicle;
 
-  const [pickup,   setPickup]   = useState('');
-  const [dropoff,  setDropoff]  = useState('');
-  const [startDate, setStart]   = useState('');
-  const [endDate,   setEnd]     = useState('');
-  const [phone,    setPhone]    = useState('');
-  const [agreed,   setAgreed]   = useState(false);
-  const [payment,  setPayment]  = useState('esewa');
-  const [terms,    setTerms]    = useState([]);
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState(null);
+  const [pickup,    setPickup]    = useState('');
+  const [dropoff,   setDropoff]   = useState('');
+  const [startDate, setStart]     = useState('');
+  const [endDate,   setEnd]       = useState('');
+  const [phone,     setPhone]     = useState('');
+  const [agreed,    setAgreed]    = useState(false);
+  const [payment,   setPayment]   = useState('esewa');
+  const [terms,     setTerms]     = useState([]);
+  const [loading,   setLoading]   = useState(false);
+  const [error,     setError]     = useState(null);
   const [confirmed, setConfirmed] = useState(false);
   const [bookingId, setBookingId] = useState(null);
 
@@ -42,9 +42,58 @@ export default function Booking() {
 
   const canSubmit = agreed && days > 0 && pickup.trim() && phone.trim();
 
-  async function handleSubmit() {
+  // ── eSewa: initiate → redirect to gateway ────────────────────────────────
+  async function handleEsewaPayment() {
     setError(null);
-    if (!canSubmit) return;
+    setLoading(true);
+    try {
+      const data = await apiFetch('/api/payment/esewa_initiate.php', {
+        method: 'POST',
+        body: {
+          email:             user.email,
+          vehicle_id:        vehicle.id,
+          start_date:        startDate,
+          end_date:          endDate,
+          total_price:       total,
+          pickup_location:   pickup,
+          dropoff_location:  dropoff,
+          contact_phone:     phone,
+        },
+      });
+
+      if (!data.success) {
+        setError(data.message || 'Failed to initiate payment');
+        return;
+      }
+
+      // Store booking id so the success page can reference it
+      sessionStorage.setItem('esewa_booking_id', data.booking_id);
+
+      // Build a hidden form and auto-submit to eSewa gateway
+      const form = document.createElement('form');
+      form.method = 'POST';
+      form.action = data.gateway_url;
+
+      Object.entries(data.params).forEach(([key, value]) => {
+        const input = document.createElement('input');
+        input.type  = 'hidden';
+        input.name  = key;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      document.body.appendChild(form);
+      form.submit();
+    } catch (e) {
+      setError(e.message || 'Cannot connect to server. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // ── Khalti / other: plain booking (no gateway) ───────────────────────────
+  async function handlePlainBooking() {
+    setError(null);
     setLoading(true);
     try {
       const data = await apiFetch('/api/user/bookings.php', {
@@ -70,6 +119,15 @@ export default function Booking() {
     }
   }
 
+  function handleSubmit() {
+    if (!canSubmit) return;
+    if (payment === 'esewa') {
+      handleEsewaPayment();
+    } else {
+      handlePlainBooking();
+    }
+  }
+
   if (!vehicle) {
     return (
       <div className="booking-empty">
@@ -82,7 +140,7 @@ export default function Booking() {
   const thumb = vehicle.primary_image || vehicle.image_url
     || 'https://placehold.co/120x80/e5e7eb/9ca3af?text=No+Image';
 
-  // ── Confirmation screen ──────────────────────────────────────────────────
+  // ── Confirmation screen (Khalti / non-eSewa) ─────────────────────────────
   if (confirmed) {
     return (
       <div className="booking-page">
@@ -122,7 +180,7 @@ export default function Booking() {
     );
   }
 
-  // ── Booking form ─────────────────────────────────────────────────────────
+  // ── Booking form ──────────────────────────────────────────────────────────
   return (
     <div className="booking-page">
       <div className="booking-inner">
@@ -224,8 +282,24 @@ export default function Booking() {
                   <span className="bk-payment-badge" style={{ color: m.color }}>{m.label}</span>
                 </label>
               ))}
+
+              {/* eSewa sandbox notice */}
+              {payment === 'esewa' && (
+                <div className="bk-esewa-notice">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#166534" strokeWidth="2">
+                    <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                  </svg>
+                  <span>
+                    You will be redirected to <strong>eSewa</strong> to complete payment securely.
+                    Sandbox test ID: <strong>9806800001</strong> · Password: <strong>Nepal@123</strong>
+                  </span>
+                </div>
+              )}
+
               <p style={{ margin:'10px 0 0', fontSize:'12px', color:'#6b7280' }}>
-                Payment will be collected at vehicle pickup. Your advance is 100% refundable if cancelled.
+                {payment === 'esewa'
+                  ? 'You will be redirected to eSewa to complete the payment.'
+                  : 'Payment will be collected at vehicle pickup. Your advance is 100% refundable if cancelled.'}
               </p>
             </div>
 
@@ -247,10 +321,26 @@ export default function Booking() {
 
             {error && <p style={{ color:'#dc2626', fontSize:'13px', margin:'0 0 10px', textAlign:'center' }}>{error}</p>}
 
-            <button className={`bk-confirm-btn${canSubmit ? '' : ' disabled'}`}
-              disabled={!canSubmit || loading} onClick={handleSubmit}>
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-              {loading ? 'Submitting...' : 'Confirm Booking'}
+            <button
+              className={`bk-confirm-btn${canSubmit ? '' : ' disabled'}${payment === 'esewa' ? ' esewa' : ''}`}
+              disabled={!canSubmit || loading}
+              onClick={handleSubmit}
+            >
+              {payment === 'esewa' ? (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M5 12h14M12 5l7 7-7 7"/>
+                  </svg>
+                  {loading ? 'Redirecting to eSewa…' : 'Pay with eSewa'}
+                </>
+              ) : (
+                <>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>
+                  </svg>
+                  {loading ? 'Submitting...' : 'Confirm Booking'}
+                </>
+              )}
             </button>
 
             {!agreed && <p className="bk-summary-hint">Accept Terms &amp; Conditions to proceed.</p>}

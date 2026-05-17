@@ -16,6 +16,8 @@ import AdminBookings from './pages/admin/AdminBookings';
 import AdminTerms from './pages/admin/AdminTerms';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import EditVehicle from './pages/admin/EditVehicle';
+import EsewaSuccess from './pages/EsewaSuccess';
+import EsewaFailure from './pages/EsewaFailure';
 import { AuthProvider } from './context/AuthContext';
 
 // Lazy stubs for pages not yet built
@@ -57,6 +59,10 @@ export default function App() {
         <Route path="/booking"        element={<ProtectedRoute><Booking /></ProtectedRoute>} />
         <Route path="/my-bookings"    element={<ProtectedRoute><MyBookings /></ProtectedRoute>} />
         <Route path="/profile"        element={<ProtectedRoute><Profile /></ProtectedRoute>} />
+
+        {/* eSewa payment callbacks — no Navbar needed, user may not be "logged in" context here */}
+        <Route path="/payment/esewa/success" element={<EsewaSuccess />} />
+        <Route path="/payment/esewa/failure" element={<EsewaFailure />} />
 
         {/* Admin protected */}
         <Route path="/admin/dashboard"         element={<AdminRoute><AdminLayout /></AdminRoute>}>
