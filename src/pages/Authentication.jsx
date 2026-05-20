@@ -198,9 +198,10 @@ export default function Authentication() {
         setSuGoogleId(data.google_id || '');
         setScreen(S.SIGNUP);
       } else {
-        // Existing user — Google verified identity, log in directly
-        localStorage.setItem('user', JSON.stringify(data.user));
-        navigate('/dashboard');
+        // Existing account — redirect to sign in and prompt for password
+        setSiEmail(data.email || '');
+        setScreen(S.SIGNIN);
+        setSuccessMsg('An account with this email already exists. Please sign in with your password.');
       }
     } catch (e) { err(e.message || 'Google sign-in failed'); }
     finally     { setLoading(false); }
