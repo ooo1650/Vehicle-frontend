@@ -2,11 +2,14 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Profile.css';
 import { apiFetch } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
+import { getSession, setSession } from '../utils/session';
 
 export default function Profile() {
   const navigate  = useNavigate();
   const fileRef   = useRef(null);
-  const [user, setUser] = useState(JSON.parse(localStorage.getItem('user') || '{}'));
+  const { logoutUser } = useAuth();
+  const [user, setUser] = useState(getSession() || {});
 
   const [editing,     setEditing]     = useState(false);
   const [firstName,   setFirstName]   = useState(user.given_name  || '');
@@ -65,7 +68,7 @@ export default function Profile() {
         dob:         data.dob,
         picture:     newPicture,
       };
-      localStorage.setItem('user', JSON.stringify(updated));
+      setSession(updated);
       setUser(updated);
       setPicFile(null);
       setPicPreview(null);
@@ -164,7 +167,7 @@ export default function Profile() {
           </div>
         </div>
 
-        <button className="profile-logout" onClick={() => { localStorage.removeItem('user'); navigate('/login'); }}>
+        <button className="profile-logout" onClick={() => logoutUser()}>
           Sign Out
         </button>
       </div>

@@ -20,11 +20,13 @@ import EsewaSuccess from './pages/EsewaSuccess';
 import EsewaFailure from './pages/EsewaFailure';
 import { AuthProvider } from './context/AuthContext';
 
+import { getSession } from './utils/session';
+
 // Lazy stubs for pages not yet built
 const VehicleDetail = () => <div style={{padding:40}}><h2>Vehicle Detail</h2><p>Coming soon.</p></div>;
 const AddVehicle    = () => <div style={{padding:40}}><h2>Add Vehicle</h2><p>Coming soon.</p></div>;
 
-function isLoggedIn()      { return localStorage.getItem('user')  !== null; }
+function isLoggedIn()      { return getSession() !== null; }
 function isAdminLoggedIn() { return localStorage.getItem('admin') !== null; }
 
 function ProtectedRoute({ children }) {

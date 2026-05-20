@@ -2,13 +2,14 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import './Navbar.css';
+import { getSession } from '../utils/session';
 
 export default function Navbar() {
   const location  = useLocation();
   const navigate  = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const user = JSON.parse(localStorage.getItem('user') || 'null');
+  const user = getSession();
 
   const navLinks = [
     { to: '/dashboard',   label: 'Home' },
@@ -53,18 +54,10 @@ export default function Navbar() {
               title="View profile"
             >
               {user.picture ? (
-                <img
-                  src={user.picture}
-                  alt={user.name}
-                  className="nav-avatar-img"
-                  referrerPolicy="no-referrer"
-                />
+                <img src={user.picture} alt={user.given_name}
+                  className="nav-avatar-img" referrerPolicy="no-referrer" />
               ) : (
-                <img
-                  src="/default-avatar.svg"
-                  alt="Profile"
-                  className="nav-avatar-img"
-                />
+                <img src="/default-avatar.svg" alt="Profile" className="nav-avatar-img" />
               )}
               <span className="nav-avatar-name">
                 {user.given_name || user.username}
@@ -76,11 +69,7 @@ export default function Navbar() {
         </div>
 
         {/* Mobile hamburger */}
-        <button
-          className="mobile-menu-btn"
-          onClick={() => setMobileOpen(!mobileOpen)}
-          aria-label="Toggle menu"
-        >
+        <button className="mobile-menu-btn" onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
           {mobileOpen ? <X size={22} /> : <Menu size={22} />}
         </button>
       </div>
@@ -89,27 +78,18 @@ export default function Navbar() {
       {mobileOpen && (
         <div className="mobile-menu">
           {user && navLinks.map((link) => (
-            <Link
-              key={link.to}
-              to={link.to}
+            <Link key={link.to} to={link.to}
               className={`nav-link-button${location.pathname === link.to ? ' active' : ''}`}
-              onClick={() => setMobileOpen(false)}
-            >
+              onClick={() => setMobileOpen(false)}>
               {link.label}
             </Link>
           ))}
           {user ? (
-            <Link
-              to="/profile"
-              className="nav-link-button"
-              onClick={() => setMobileOpen(false)}
-            >
+            <Link to="/profile" className="nav-link-button" onClick={() => setMobileOpen(false)}>
               👤 My Profile
             </Link>
           ) : (
-            <Link to="/login" className="nav-link-button" onClick={() => setMobileOpen(false)}>
-              Login
-            </Link>
+            <Link to="/login" className="nav-link-button" onClick={() => setMobileOpen(false)}>Login</Link>
           )}
         </div>
       )}

@@ -1,9 +1,10 @@
 import { useState, useRef } from 'react';
 import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
 import { jwtDecode } from 'jwt-decode';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import '../Auth.css';
 import { apiFetch } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 
 const GOOGLE_CLIENT_ID = '537729065202-f0287ficblsbjfgp9k5gkg0judpk2nkv.apps.googleusercontent.com';
 
@@ -56,10 +57,14 @@ function StrengthBar({ pw }) {
 
 export default function Authentication() {
   const navigate  = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { loginUser } = useAuth();
   const fileRef   = useRef(null);
 
+  const timeoutReason = searchParams.get('reason');
+
   const [screen, setScreen] = useState(S.SIGNIN);
-  const [error,  setError]  = useState(null);
+  const [error,  setError]  = useState(timeoutReason || null);
   const [successMsg, setSuccessMsg] = useState(null);
   const [loading, setLoading] = useState(false);
 
@@ -122,7 +127,7 @@ export default function Authentication() {
         method: 'POST',
         body: { email: siEmail.trim(), password: siPw },
       });
-      localStorage.setItem('user', JSON.stringify(data.user));
+      loginUser(data.user);
       navigate('/dashboard');
     } catch (e) { err(e.message); }
     finally     { setLoading(false); }
@@ -224,12 +229,12 @@ export default function Authentication() {
         setScreen(S.RESET_PASSWORD);
       } else if (otpMode === 'existing_login') {
         // Existing user signed up again — log them straight in
-        localStorage.setItem('user', JSON.stringify(data.user));
+        loginUser(data.user);
         navigate('/dashboard');
       } else if (data.needs_password) {
         setScreen(S.SET_PASSWORD);
       } else {
-        localStorage.setItem('user', JSON.stringify(data.user));
+        loginUser(data.user);
         navigate('/dashboard');
       }
     } catch (e) { err(e.message); }
@@ -293,7 +298,7 @@ export default function Authentication() {
         method: 'POST',
         body: { email: pendingEmail, password: pw1 },
       });
-      localStorage.setItem('user', JSON.stringify(data.user));
+      loginUser(data.user);
       navigate('/dashboard');
     } catch (e) { err(e.message); }
     finally     { setLoading(false); }

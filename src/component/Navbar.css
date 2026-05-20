@@ -210,3 +210,34 @@
   font-weight: 500;
   color: #1e293b;
 }
+
+/* Logout button */
+.nav-logout-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 14px;
+  background: none;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  color: #64748b;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.15s;
+}
+.nav-logout-btn:hover {
+  background: #fef2f2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+
+.nav-logout-mobile {
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: none;
+  color: #b91c1c;
+  cursor: pointer;
+}
