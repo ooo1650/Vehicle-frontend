@@ -109,22 +109,21 @@ export default function Authentication() {
     return age;
   }
 
-  // ── Sign In ───────────────────────────────────────────────────────────────
+  // ── Sign In — direct login, no OTP ──────────────────────────────────────
 
   async function handleSignIn(e) {
     e.preventDefault(); clearErr();
-    if (!siEmail) return err('Email is required');
-    if (!siPw)    return err('Password is required');
+    if (!siEmail.trim()) return err('Email is required');
+    if (!siPw.trim())    return err('Password is required');
 
     setLoading(true);
     try {
-      await apiFetch('/api/auth/signin.php', {
+      const data = await apiFetch('/api/auth/signin.php', {
         method: 'POST',
-        body: { email: siEmail, password: siPw },
+        body: { email: siEmail.trim(), password: siPw },
       });
-      setPendingEmail(siEmail);
-      setOtpMode('signin');
-      setScreen(S.OTP);
+      localStorage.setItem('user', JSON.stringify(data.user));
+      navigate('/dashboard');
     } catch (e) { err(e.message); }
     finally     { setLoading(false); }
   }
@@ -141,7 +140,6 @@ export default function Authentication() {
 
     setLoading(true);
     try {
-      // Use FormData only when a picture file is attached, otherwise JSON
       let body;
       if (suPicFile) {
         const fd = new FormData();
@@ -162,9 +160,21 @@ export default function Authentication() {
         };
       }
 
-      await apiFetch('/api/auth/signup.php', { method: 'POST', body });
+      const data = await apiFetch('/api/auth/signup.php', { method: 'POST', body });
+
+      // If existing user — OTP sent, go to OTP screen to log them in
+      if (data.existing_user) {
+        setPendingEmail(suEmail.trim());
+        setOtpMode('existing_login');
+        setOtp('');
+        setScreen(S.OTP);
+        return;
+      }
+
+      // New user — OTP sent, go to OTP → set password
       setPendingEmail(suEmail.trim());
       setOtpMode('signup');
+      setOtp('');
       setScreen(S.OTP);
     } catch (e) { err(e.message); }
     finally     { setLoading(false); }
@@ -211,6 +221,10 @@ export default function Authentication() {
       if (otpMode === 'forgot') {
         setPw1(''); setPw2('');
         setScreen(S.RESET_PASSWORD);
+      } else if (otpMode === 'existing_login') {
+        // Existing user signed up again — log them straight in
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate('/dashboard');
       } else if (data.needs_password) {
         setScreen(S.SET_PASSWORD);
       } else {
@@ -388,7 +402,9 @@ export default function Authentication() {
               <p>
                 {otpMode === 'forgot'
                   ? <>Enter the 6-digit reset code sent to<br /><strong>{pendingEmail}</strong></>
-                  : <>Enter the 6-digit code sent to<br /><strong>{pendingEmail}</strong></>
+                  : otpMode === 'existing_login'
+                  ? <>An account with this email already exists.<br />We sent a sign-in code to <strong>{pendingEmail}</strong></>
+                  : <>Enter the 6-digit verification code sent to<br /><strong>{pendingEmail}</strong></>
                 }
               </p>
               <form className="auth-form" onSubmit={handleOtp}>

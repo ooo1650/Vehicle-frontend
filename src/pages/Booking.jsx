@@ -33,14 +33,16 @@ export default function Booking() {
       .catch(() => {});
   }, []);
 
+  const MAX_DAYS = 45;
   const days = startDate && endDate
     ? Math.max(0, Math.ceil((new Date(endDate) - new Date(startDate)) / 86400000))
     : 0;
   const total = days * Number(vehicle?.price_per_day || 0);
+  const daysExceeded = days > MAX_DAYS;
 
   const user = JSON.parse(localStorage.getItem('user') || '{}');
 
-  const canSubmit = agreed && days > 0 && pickup.trim() && phone.trim();
+  const canSubmit = agreed && days > 0 && !daysExceeded && pickup.trim() && phone.trim();
 
   // ── eSewa: initiate → redirect to gateway ────────────────────────────────
   async function handleEsewaPayment() {
@@ -63,6 +65,7 @@ export default function Booking() {
 
       if (!data.success) {
         setError(data.message || 'Failed to initiate payment');
+        setLoading(false);
         return;
       }
 
@@ -70,9 +73,11 @@ export default function Booking() {
       sessionStorage.setItem('esewa_booking_id', data.booking_id);
 
       // Build a hidden form and auto-submit to eSewa gateway
+      // Keep loading=true so button stays disabled while browser navigates away
       const form = document.createElement('form');
       form.method = 'POST';
       form.action = data.gateway_url;
+      form.style.display = 'none';
 
       Object.entries(data.params).forEach(([key, value]) => {
         const input = document.createElement('input');
@@ -84,9 +89,9 @@ export default function Booking() {
 
       document.body.appendChild(form);
       form.submit();
+      // Do NOT setLoading(false) — page is navigating away
     } catch (e) {
       setError(e.message || 'Cannot connect to server. Please try again.');
-    } finally {
       setLoading(false);
     }
   }
@@ -137,7 +142,9 @@ export default function Booking() {
     );
   }
 
-  const thumb = vehicle.primary_image || vehicle.image_url
+  const thumb = vehicle.primary_image
+    || vehicle.image_url
+    || vehicle.images?.[0]?.image_path
     || 'https://placehold.co/120x80/e5e7eb/9ca3af?text=No+Image';
 
   // ── Confirmation screen (Khalti / non-eSewa) ─────────────────────────────
@@ -320,6 +327,11 @@ export default function Booking() {
             </div>
 
             {error && <p style={{ color:'#dc2626', fontSize:'13px', margin:'0 0 10px', textAlign:'center' }}>{error}</p>}
+            {daysExceeded && (
+              <p style={{ color:'#dc2626', fontSize:'13px', margin:'0 0 10px', textAlign:'center', background:'#fef2f2', padding:'8px', borderRadius:'8px' }}>
+                Rental period cannot exceed 45 days.
+              </p>
+            )}
 
             <button
               className={`bk-confirm-btn${canSubmit ? '' : ' disabled'}${payment === 'esewa' ? ' esewa' : ''}`}
@@ -345,8 +357,9 @@ export default function Booking() {
 
             {!agreed && <p className="bk-summary-hint">Accept Terms &amp; Conditions to proceed.</p>}
             {agreed && days === 0 && <p className="bk-summary-hint">Select start and end dates.</p>}
-            {agreed && days > 0 && !phone.trim() && <p className="bk-summary-hint">Enter your contact phone number.</p>}
-            {agreed && days > 0 && phone.trim() && !pickup.trim() && <p className="bk-summary-hint">Enter pick-up location.</p>}
+            {agreed && daysExceeded && <p className="bk-summary-hint" style={{ color:'#dc2626' }}>Max rental period is 45 days.</p>}
+            {agreed && days > 0 && !daysExceeded && !phone.trim() && <p className="bk-summary-hint">Enter your contact phone number.</p>}
+            {agreed && days > 0 && !daysExceeded && phone.trim() && !pickup.trim() && <p className="bk-summary-hint">Enter pick-up location.</p>}
           </div>
         </div>
       </div>
