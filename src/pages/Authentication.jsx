@@ -322,9 +322,9 @@ export default function Authentication() {
               {successMsg && <p className="auth-success">{successMsg}</p>}
               <form className="auth-form" onSubmit={handleSignIn}>
                 <input className="auth-input" type="email" placeholder="Email address"
-                  value={siEmail} onChange={e => setSiEmail(e.target.value)} required autoFocus />
+                  value={siEmail} onChange={e => setSiEmail(e.target.value)} autoFocus />
                 <input className="auth-input" type="password" placeholder="Password"
-                  value={siPw} onChange={e => setSiPw(e.target.value)} required />
+                  value={siPw} onChange={e => setSiPw(e.target.value)} />
                 <button className="auth-btn" type="submit" disabled={loading}>
                   {loading ? 'Please wait...' : 'Sign In'}
                 </button>
