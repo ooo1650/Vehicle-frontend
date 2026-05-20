@@ -14,7 +14,8 @@ export default function Profile() {
   const [editing,     setEditing]     = useState(false);
   const [firstName,   setFirstName]   = useState(user.given_name  || '');
   const [lastName,    setLastName]    = useState(user.family_name || '');
-  const [dob,         setDob]         = useState(user.dob || '');
+  const validDob = user.dob && user.dob > '1900-01-01' ? user.dob : '';
+  const [dob, setDob] = useState(validDob);
   const [picFile,     setPicFile]     = useState(null);
   const [picPreview,  setPicPreview]  = useState(null);
   const [saving,      setSaving]      = useState(false);
@@ -88,7 +89,7 @@ export default function Profile() {
     setEditing(false);
     setFirstName(user.given_name  || '');
     setLastName(user.family_name  || '');
-    setDob(user.dob || '');
+    setDob(user.dob && user.dob > '1900-01-01' ? user.dob : '');
     setPicFile(null);
     setPicPreview(null);
     setSaveError(null);
