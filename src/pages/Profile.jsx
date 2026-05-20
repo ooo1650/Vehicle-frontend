@@ -28,6 +28,9 @@ export default function Profile() {
     ? new Date(user.last_login).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
     : 'N/A';
 
+  // Don't show obviously wrong DOB values
+  const displayDob = user.dob && user.dob > '1900-01-01' ? user.dob : '—';
+
   function handlePicChange(e) {
     const file = e.target.files[0];
     if (!file) return;
@@ -151,7 +154,7 @@ export default function Profile() {
           </div>
           <div className="profile-row">
             <span className="profile-label">Date of birth</span>
-            <span className="profile-value">{user.dob || '—'}</span>
+            <span className="profile-value">{displayDob}</span>
           </div>
           <div className="profile-row">
             <span className="profile-label">Email</span>
