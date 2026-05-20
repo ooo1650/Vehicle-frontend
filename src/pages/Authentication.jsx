@@ -162,12 +162,11 @@ export default function Authentication() {
 
       const data = await apiFetch('/api/auth/signup.php', { method: 'POST', body });
 
-      // If existing user — OTP sent, go to OTP screen to log them in
+      // If existing user — redirect to sign in with a message
       if (data.existing_user) {
-        setPendingEmail(suEmail.trim());
-        setOtpMode('existing_login');
-        setOtp('');
-        setScreen(S.OTP);
+        setSiEmail(suEmail.trim());
+        setScreen(S.SIGNIN);
+        setSuccessMsg('An account with this email already exists. Please sign in with your password.');
         return;
       }
 
