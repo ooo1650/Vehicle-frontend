@@ -191,6 +191,7 @@ export default function Authentication() {
         body: g,
       });
       if (data.is_new_user) {
+        // New user — pre-fill sign-up form
         setSuFirst(data.given_name  || '');
         setSuLast(data.family_name  || '');
         setSuEmail(data.email       || '');
@@ -198,9 +199,9 @@ export default function Authentication() {
         setSuGoogleId(data.google_id || '');
         setScreen(S.SIGNUP);
       } else {
-        setPendingEmail(data.email);
-        setOtpMode('signin');
-        setScreen(S.OTP);
+        // Existing user — Google verified identity, log in directly
+        localStorage.setItem('user', JSON.stringify(data.user));
+        navigate('/dashboard');
       }
     } catch (e) { err(e.message || 'Google sign-in failed'); }
     finally     { setLoading(false); }
