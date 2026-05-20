@@ -35,8 +35,16 @@ export default function Profile() {
   function handlePicChange(e) {
     const file = e.target.files[0];
     if (!file) return;
+    // Validate size (max 2MB)
+    if (file.size > 2 * 1024 * 1024) {
+      setSaveError('Image must be under 2MB');
+      return;
+    }
     setPicFile(file);
-    setPicPreview(URL.createObjectURL(file));
+    // Generate preview AND base64 for upload
+    const reader = new FileReader();
+    reader.onload = ev => setPicPreview(ev.target.result); // data URL
+    reader.readAsDataURL(file);
   }
 
   async function handleSave() {
@@ -44,15 +52,8 @@ export default function Profile() {
     setSaving(true); setSaveError(null); setSaveSuccess(false);
 
     try {
-      // 1. Upload avatar if changed
-      let newPicture = user.picture;
-      if (picFile) {
-        const fd = new FormData();
-        fd.append('email',   user.email);
-        fd.append('picture', picFile);
-        const d = await apiFetch('/api/user/upload_avatar.php', { method: 'POST', body: fd });
-        newPicture = d.picture;
-      }
+      // Build picture value — use base64 preview if a new file was picked
+      const newPicture = picPreview || user.picture;
 
       const data = await apiFetch('/api/user/update_profile.php', {
         method: 'PUT',
@@ -61,6 +62,7 @@ export default function Profile() {
           given_name:  firstName.trim(),
           family_name: lastName.trim(),
           dob:         dob,
+          picture:     picPreview || undefined, // only send if changed
         },
       });
 
